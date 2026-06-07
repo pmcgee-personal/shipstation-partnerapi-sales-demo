@@ -5,42 +5,20 @@ import {
   RefreshCcw,
   ChevronDown,
   Loader2,
-  AlertCircle, // Added icon for error state
+  AlertCircle,
 } from "lucide-react";
 import { api } from "../services/api";
 
-const generateDemoDetails = () => {
-  const companyNouns = [
-    "Goods",
-    "Supply",
-    "Logistics",
-    "Outfitters",
-    "Imports",
-    "Wares",
-  ];
-  const companyAdjectives = [
-    "Apex",
-    "Riverside",
-    "Summit",
-    "Coastal",
-    "Pinnacle",
-    "Nova",
-  ];
-  const randomAdjective =
-    companyAdjectives[Math.floor(Math.random() * companyAdjectives.length)];
-  const randomNoun =
-    companyNouns[Math.floor(Math.random() * companyNouns.length)];
-  const timestamp = Date.now().toString().slice(-5);
-  const label = `${randomAdjective} ${randomNoun}`;
-  const email = `demo-${randomAdjective.toLowerCase()}-${timestamp}@example.com`;
-  return { label, email };
-};
+// 1. Import our newly extracted and tested utility function!
+import { generateDemoDetails } from "../utils/demoUtils";
+
+// 2. The inline generator definition has been completely removed.
 
 export default function DemoBar({ activeAccountId, setActiveAccountId }) {
   const [accounts, setAccounts] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
-  const [isLoadingAccounts, setIsLoadingAccounts] = useState(true); // Added loading state
-  const [error, setError] = useState(null); // Added dedicated error state
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -55,7 +33,7 @@ export default function DemoBar({ activeAccountId, setActiveAccountId }) {
     try {
       const data = await api.listAccounts();
       setAccounts(data);
-      setError(null); // Clear errors on success
+      setError(null);
     } catch (err) {
       const msg = err.message || "Unknown error";
       console.error("Failed to load accounts:", err);
@@ -65,15 +43,15 @@ export default function DemoBar({ activeAccountId, setActiveAccountId }) {
 
   const handleNewAccountClick = async () => {
     setIsCreating(true);
-    setError(null); // Clear previous errors
+    setError(null);
     try {
+      // 3. We call the imported function exactly the same way
       const { label, email } = generateDemoDetails();
       const newAccount = await api.createAccount(label, email);
 
       await loadAccounts();
       setActiveAccountId(newAccount.account_id);
     } catch (err) {
-      // Improved error handling without alerts
       const msg = err.message || "Unknown error";
       console.error("Seamless account creation failed:", err);
       setError(`Creation failed: ${msg}`);
@@ -84,7 +62,7 @@ export default function DemoBar({ activeAccountId, setActiveAccountId }) {
 
   const handleReset = () => {
     setActiveAccountId(null);
-    setError(null); // Clear errors on reset
+    setError(null);
   };
 
   return (
@@ -96,7 +74,7 @@ export default function DemoBar({ activeAccountId, setActiveAccountId }) {
           <span>SALES DEMO</span>
         </div>
 
-        {/* Error Banner Injection - Absolute positioned over left controls if error exists */}
+        {/* Error Banner Injection */}
         {error ? (
           <div className="absolute left-40 bg-rose-950/80 text-rose-300 border border-rose-800/50 px-3 py-1 rounded flex items-center space-x-2 animate-in fade-in zoom-in duration-200">
             <AlertCircle size={14} />
@@ -122,7 +100,7 @@ export default function DemoBar({ activeAccountId, setActiveAccountId }) {
             onChange={(e) => setActiveAccountId(e.target.value)}
             disabled={isCreating || isLoadingAccounts}
           >
-            {/* Added dynamic loading prompt */}
+            {/* dynamic loading prompt */}
             {isLoadingAccounts ? (
               <option value="">Loading accounts...</option>
             ) : (

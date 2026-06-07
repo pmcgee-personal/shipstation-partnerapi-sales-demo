@@ -3,7 +3,7 @@ service: shipstation-partnerapi-sales-demo
 provider:
   name: aws
   runtime: nodejs20.x
-  region: us-west-2 # Change this if you used a different region during "aws configure"
+  region: us-west-2
   stage: dev
 
   # Give our Lambda functions permission to talk to DynamoDB and SSM Parameter Store
@@ -17,11 +17,12 @@ provider:
             - dynamodb:Scan
           Resource:
             - arn:aws:dynamodb:*:*:table/shipstation-partnerapi-demo-accounts
+
         - Effect: Allow
           Action:
             - ssm:GetParameter
           Resource:
-            - arn:aws:ssm:*:*:parameter/shipstation-demo/partner-api-key
+            - arn:aws:ssm:*:*:parameter/shipstation-demo/*
 
 # We will define our Lambda endpoints here.
 functions:

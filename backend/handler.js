@@ -147,13 +147,25 @@ module.exports.directLogin = async (event) => {
       };
     }
 
-    // 2. Fetch the secure Partner API Key from AWS SSM Parameter Store
-    const ssmCommand = new GetParameterCommand({
+    // 2. Fetch both the secure Partner API Key and the Theme ID from AWS SSM Parameter Store
+    // Using two separate GetParameterCommand calls or a broader method.
+    // For simplicity and to match your current syntax, we retrieve both parameters:
+    const apiKeyCommand = new GetParameterCommand({
       Name: "/shipstation-demo/partner-api-key",
       WithDecryption: true,
     });
-    const ssmResponse = await ssmClient.send(ssmCommand);
-    const partnerApiKey = ssmResponse.Parameter.Value;
+    const themeIdCommand = new GetParameterCommand({
+      Name: "/shipstation-demo/theme-id",
+      WithDecryption: false, // Theme ID is not a secret, so decryption is optional
+    });
+
+    const [apiKeyResponse, themeIdResponse] = await Promise.all([
+      ssmClient.send(apiKeyCommand),
+      ssmClient.send(themeIdCommand).catch(() => null), // Fallback if no theme is set yet
+    ]);
+
+    const partnerApiKey = apiKeyResponse.Parameter.Value;
+    const themeId = themeIdResponse?.Parameter?.Value || "";
 
     // 3. Request the Ephemeral Token using the exact Partner API spec
     const redirectResponse = await fetch(
@@ -162,12 +174,11 @@ module.exports.directLogin = async (event) => {
         method: "POST",
         headers: {
           "API-Key": partnerApiKey,
-          "On-Behalf-Of": accountId.toString(), // The child account ID goes here!
+          "On-Behalf-Of": accountId.toString(),
           "Content-Type": "application/json",
         },
       },
     );
-
     if (!redirectResponse.ok) {
       const errorText = await redirectResponse.text();
       console.error("Direct Login API Error:", errorText);
@@ -185,7 +196,10 @@ module.exports.directLogin = async (event) => {
     // We get back { "token": "...", "redirect_url": "..." }
     // Per the docs, we want to append &redirect_to=carriers so the sales rep
     // lands exactly on the carrier page, which is the core of this demo.
-    const finalRedirectUrl = `${redirectData.redirect_url}&redirect_to=carriers`;
+    let finalRedirectUrl = `${redirectData.redirect_url}&redirect_to=carriers`;
+    if (themeId) {
+      finalRedirectUrl += `&theme_id=${themeId}`;
+    }
 
     // 4. Return the ephemeral redirect URL to the frontend
     return {

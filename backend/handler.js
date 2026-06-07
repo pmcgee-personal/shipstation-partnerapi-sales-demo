@@ -134,3 +134,78 @@ module.exports.listAccounts = async (event) => {
     };
   }
 };
+module.exports.directLogin = async (event) => {
+  try {
+    const body = JSON.parse(event.body || "{}");
+    const { accountId } = body;
+
+    // 1. Validation
+    if (!accountId) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "accountId is required" }),
+      };
+    }
+
+    // 2. Fetch the secure Partner API Key from AWS SSM Parameter Store
+    const ssmCommand = new GetParameterCommand({
+      Name: "/shipstation-demo/partner-api-key",
+      WithDecryption: true,
+    });
+    const ssmResponse = await ssmClient.send(ssmCommand);
+    const partnerApiKey = ssmResponse.Parameter.Value;
+
+    // 3. Request the Ephemeral Token using the exact Partner API spec
+    const redirectResponse = await fetch(
+      "https://api.shipengine.com/v1/tokens/ephemeral?redirect=shipengine-dashboard",
+      {
+        method: "POST",
+        headers: {
+          "API-Key": partnerApiKey,
+          "On-Behalf-Of": accountId.toString(), // The child account ID goes here!
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!redirectResponse.ok) {
+      const errorText = await redirectResponse.text();
+      console.error("Direct Login API Error:", errorText);
+      return {
+        statusCode: redirectResponse.status,
+        body: JSON.stringify({
+          error: "Failed to generate ephemeral token",
+          details: errorText,
+        }),
+      };
+    }
+
+    const redirectData = await redirectResponse.json();
+
+    // We get back { "token": "...", "redirect_url": "..." }
+    // Per the docs, we want to append &redirect_to=carriers so the sales rep
+    // lands exactly on the carrier page, which is the core of this demo.
+    const finalRedirectUrl = `${redirectData.redirect_url}&redirect_to=carriers`;
+
+    // 4. Return the ephemeral redirect URL to the frontend
+    return {
+      statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*", // Required for CORS
+        "Access-Control-Allow-Credentials": true,
+      },
+      body: JSON.stringify({
+        token: redirectData.token,
+        redirect_url: finalRedirectUrl,
+      }),
+    };
+  } catch (error) {
+    console.error("Error during direct login generation:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: "Internal Server Error during direct login generation",
+      }),
+    };
+  }
+};

@@ -24,7 +24,6 @@ provider:
             - arn:aws:ssm:*:*:parameter/shipstation-demo/partner-api-key
 
 # We will define our Lambda endpoints here.
-# Let's start with just the first one to test that our deployment works perfectly!
 functions:
   createAccount:
     handler: handler.createAccount
@@ -40,4 +39,12 @@ functions:
       - http:
           path: api/accounts
           method: get
+          cors: true
+
+  directLogin:
+    handler: handler.directLogin
+    events:
+      - http:
+          path: api/direct-login
+          method: post
           cors: true

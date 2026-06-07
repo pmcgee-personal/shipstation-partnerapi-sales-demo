@@ -23,7 +23,7 @@ provider:
           Resource:
             - arn:aws:ssm:*:*:parameter/shipstation-demo/partner-api-key
 
-# We will define our Lambda endpoints here. 
+# We will define our Lambda endpoints here.
 # Let's start with just the first one to test that our deployment works perfectly!
 functions:
   createAccount:
@@ -32,5 +32,12 @@ functions:
       - http:
           path: api/accounts
           method: post
-          cors: true # Automatically configures CORS preflight
+          cors: true
 
+  listAccounts:
+    handler: handler.listAccounts
+    events:
+      - http:
+          path: api/accounts
+          method: get
+          cors: true

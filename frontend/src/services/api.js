@@ -1,6 +1,12 @@
-// Your live AWS API Gateway base URL
-const API_BASE_URL =
-  "https://4jaiexribf.execute-api.us-west-2.amazonaws.com/dev";
+// Load the API Base URL from the environment variables
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+// Fail-fast validation check
+if (!API_BASE_URL) {
+  throw new Error(
+    "VITE_API_BASE_URL is not set. Please check your .env or .env.local file.",
+  );
+}
 
 export const api = {
   /**
@@ -22,7 +28,6 @@ export const api = {
         errorData.details || errorData.error || "Failed to create account",
       );
     }
-
     return await response.json();
   },
 
@@ -32,9 +37,11 @@ export const api = {
    */
   async listAccounts() {
     const response = await fetch(`${API_BASE_URL}/api/accounts`);
+
     if (!response.ok) {
       throw new Error("Failed to fetch demo accounts");
     }
+
     const data = await response.json();
     return data.accounts || [];
   },
@@ -63,6 +70,7 @@ export const api = {
 
     return await response.json(); // Returns { token, redirect_url }
   },
+
   /**
    * GET /api/carriers/:accountId
    * Fetches the connected carriers for the active demo account from ShipStation

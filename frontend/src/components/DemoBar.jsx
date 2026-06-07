@@ -5,11 +5,10 @@ import {
   RefreshCcw,
   ChevronDown,
   Loader2,
+  AlertCircle, // Added icon for error state
 } from "lucide-react";
 import { api } from "../services/api";
-// We no longer need NewAccountModal
 
-// Helper to generate unique, professional demo names
 const generateDemoDetails = () => {
   const companyNouns = [
     "Goods",
@@ -27,50 +26,57 @@ const generateDemoDetails = () => {
     "Pinnacle",
     "Nova",
   ];
-
   const randomAdjective =
     companyAdjectives[Math.floor(Math.random() * companyAdjectives.length)];
   const randomNoun =
     companyNouns[Math.floor(Math.random() * companyNouns.length)];
-  const timestamp = Date.now().toString().slice(-5); // Unique suffix
-
+  const timestamp = Date.now().toString().slice(-5);
   const label = `${randomAdjective} ${randomNoun}`;
   const email = `demo-${randomAdjective.toLowerCase()}-${timestamp}@example.com`;
-
   return { label, email };
 };
 
 export default function DemoBar({ activeAccountId, setActiveAccountId }) {
   const [accounts, setAccounts] = useState([]);
-  const [isCreating, setIsCreating] = useState(false); // State for the new account button
+  const [isCreating, setIsCreating] = useState(false);
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(true); // Added loading state
+  const [error, setError] = useState(null); // Added dedicated error state
 
   useEffect(() => {
-    loadAccounts();
+    const fetchInitialData = async () => {
+      setIsLoadingAccounts(true);
+      await loadAccounts();
+      setIsLoadingAccounts(false);
+    };
+    fetchInitialData();
   }, []);
 
   const loadAccounts = async () => {
     try {
       const data = await api.listAccounts();
       setAccounts(data);
-    } catch (error) {
-      console.error("Failed to load accounts:", error);
+      setError(null); // Clear errors on success
+    } catch (err) {
+      const msg = err.message || "Unknown error";
+      console.error("Failed to load accounts:", err);
+      setError(`Failed to fetch accounts: ${msg}`);
     }
   };
 
   const handleNewAccountClick = async () => {
     setIsCreating(true);
+    setError(null); // Clear previous errors
     try {
       const { label, email } = generateDemoDetails();
       const newAccount = await api.createAccount(label, email);
 
-      // Reload the dropdown and auto-select the new account
       await loadAccounts();
       setActiveAccountId(newAccount.account_id);
-    } catch (error) {
-      console.error("Seamless account creation failed:", error);
-      alert(
-        "Failed to create a new demo account. Please check the console for details.",
-      );
+    } catch (err) {
+      // Improved error handling without alerts
+      const msg = err.message || "Unknown error";
+      console.error("Seamless account creation failed:", err);
+      setError(`Creation failed: ${msg}`);
     } finally {
       setIsCreating(false);
     }
@@ -78,22 +84,32 @@ export default function DemoBar({ activeAccountId, setActiveAccountId }) {
 
   const handleReset = () => {
     setActiveAccountId(null);
+    setError(null); // Clear errors on reset
   };
 
   return (
-    <div className="bg-slate-900 text-slate-300 text-sm py-2 px-4 flex items-center justify-between border-b border-slate-700 shadow-sm">
+    <div className="bg-slate-900 text-slate-300 text-sm py-2 px-4 flex items-center justify-between border-b border-slate-700 shadow-sm relative">
       {/* Left Side */}
       <div className="flex items-center space-x-6">
         <div className="flex items-center space-x-2 text-white font-medium">
           <PlaySquare size={16} className="text-emerald-400" />
           <span>SALES DEMO</span>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-slate-500">Template:</span>
-          <span className="bg-slate-800 px-2 py-1 rounded text-slate-300 flex items-center">
-            Modern WMS <ChevronDown size={14} className="ml-1 opacity-50" />
-          </span>
-        </div>
+
+        {/* Error Banner Injection - Absolute positioned over left controls if error exists */}
+        {error ? (
+          <div className="absolute left-40 bg-rose-950/80 text-rose-300 border border-rose-800/50 px-3 py-1 rounded flex items-center space-x-2 animate-in fade-in zoom-in duration-200">
+            <AlertCircle size={14} />
+            <span className="text-xs font-medium">{error}</span>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-2">
+            <span className="text-slate-500">Template:</span>
+            <span className="bg-slate-800 px-2 py-1 rounded text-slate-300 flex items-center">
+              Modern WMS <ChevronDown size={14} className="ml-1 opacity-50" />
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Right Side */}
@@ -101,12 +117,18 @@ export default function DemoBar({ activeAccountId, setActiveAccountId }) {
         <div className="flex items-center space-x-2">
           <span className="text-slate-500">Active Account:</span>
           <select
-            className="bg-slate-800 border border-slate-700 text-white text-sm rounded px-3 py-1 focus:ring-1 focus:ring-emerald-500 outline-none w-48 cursor-pointer"
+            className="bg-slate-800 border border-slate-700 text-white text-sm rounded px-3 py-1 focus:ring-1 focus:ring-emerald-500 outline-none w-48 cursor-pointer disabled:opacity-50"
             value={activeAccountId || ""}
             onChange={(e) => setActiveAccountId(e.target.value)}
-            disabled={isCreating}
+            disabled={isCreating || isLoadingAccounts}
           >
-            <option value="">-- Select Demo Account --</option>
+            {/* Added dynamic loading prompt */}
+            {isLoadingAccounts ? (
+              <option value="">Loading accounts...</option>
+            ) : (
+              <option value="">-- Select Demo Account --</option>
+            )}
+
             {accounts.map((acc) => (
               <option key={acc.account_id} value={acc.account_id}>
                 {acc.label} ({acc.account_id})
@@ -119,7 +141,7 @@ export default function DemoBar({ activeAccountId, setActiveAccountId }) {
           className="flex items-center space-x-1.5 text-slate-300 hover:text-white hover:bg-slate-800 px-2.5 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-wait"
           title="Create New Demo Account"
           onClick={handleNewAccountClick}
-          disabled={isCreating}
+          disabled={isCreating || isLoadingAccounts}
         >
           {isCreating ? (
             <Loader2 size={14} className="animate-spin" />

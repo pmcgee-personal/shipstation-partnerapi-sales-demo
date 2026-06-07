@@ -22,7 +22,11 @@ const DashboardPlaceholder = () => (
 );
 
 export default function Layout({ activeAccountId }) {
-  const [activePage, setActivePage] = useState("dashboard"); // 'dashboard' or 'carrier-settings'
+  const [activePage, setActivePage] = useState(() => {
+    // If we have an active account saved, let's keep them on Carrier Settings for a seamless return flow
+    const savedAccount = localStorage.getItem("ss_active_account_id");
+    return savedAccount ? "carrier-settings" : "dashboard";
+  });
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },

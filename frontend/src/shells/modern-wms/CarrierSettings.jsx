@@ -38,6 +38,9 @@ export default function CarrierSettings({ activeAccountId }) {
       // Call our backend to get the ephemeral redirect URL
       const { redirect_url } = await api.getDirectLoginUrl(activeAccountId);
 
+      // Save the active account ID so we can restore it when they come back
+      localStorage.setItem("ss_active_account_id", activeAccountId);
+
       // Redirect the user's browser to the ShipStation portal
       window.location.href = redirect_url;
     } catch (err) {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DemoBar from "./components/DemoBar";
 
 // In Phase 1, we hardcode the Modern WMS shell.
@@ -6,9 +6,19 @@ import DemoBar from "./components/DemoBar";
 import ModernWmsLayout from "./shells/modern-wms/Layout";
 
 function App() {
-  // This state controls which demo account the sales rep is actively demonstrating.
-  // We lift this state up to the very top so both the DemoBar and the Shell can access it.
-  const [activeAccountId, setActiveAccountId] = useState(null);
+  // 1. Initialize state directly from localStorage so it persists across redirects
+  const [activeAccountId, setActiveAccountId] = useState(() => {
+    return localStorage.getItem("ss_active_account_id") || null;
+  });
+
+  // 2. Keep localStorage in sync whenever the sales rep manually changes the account
+  useEffect(() => {
+    if (activeAccountId) {
+      localStorage.setItem("ss_active_account_id", activeAccountId);
+    } else {
+      localStorage.removeItem("ss_active_account_id");
+    }
+  }, [activeAccountId]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">

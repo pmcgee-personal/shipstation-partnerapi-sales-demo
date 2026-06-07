@@ -1,5 +1,6 @@
 // Your live AWS API Gateway base URL
-const API_BASE_URL = "https://4jaiexribf.execute-api.us-west-2.amazonaws.com/dev";
+const API_BASE_URL =
+  "https://4jaiexribf.execute-api.us-west-2.amazonaws.com/dev";
 
 export const api = {
   /**
@@ -17,7 +18,9 @@ export const api = {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.details || errorData.error || "Failed to create account");
+      throw new Error(
+        errorData.details || errorData.error || "Failed to create account",
+      );
     }
 
     return await response.json();
@@ -51,10 +54,31 @@ export const api = {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.details || errorData.error || "Failed to generate direct login link");
+      throw new Error(
+        errorData.details ||
+          errorData.error ||
+          "Failed to generate direct login link",
+      );
     }
 
     return await response.json(); // Returns { token, redirect_url }
-  }
-};
+  },
+  /**
+   * GET /api/carriers/:accountId
+   * Fetches the connected carriers for the active demo account from ShipStation
+   */
+  async listCarriers(accountId) {
+    const response = await fetch(`${API_BASE_URL}/api/carriers/${accountId}`);
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.details || errorData.error || "Failed to fetch carriers",
+      );
+    }
+
+    const data = await response.json();
+    // ShipEngine returns { "carriers": [...] }
+    return data.carriers || [];
+  },
+};

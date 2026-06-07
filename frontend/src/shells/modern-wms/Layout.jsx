@@ -15,8 +15,8 @@ const DashboardPlaceholder = () => (
   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
     <h2 className="text-xl font-bold text-gray-800 mb-2">WMS Dashboard</h2>
     <p className="text-gray-500">
-      Welcome to your Modern Warehouse Management System. Select Carrier
-      Settings to test the integration.
+      Welcome to Apex Warehouse Management System. Select Carrier Settings to
+      get started.
     </p>
   </div>
 );
@@ -79,7 +79,7 @@ export default function Layout({ activeAccountId }) {
         {/* Footer of Sidebar */}
         <div className="p-4 border-t border-slate-800 text-xs text-slate-500 flex items-center space-x-2">
           <Users size={14} />
-          <span>Sales Demo Session</span>
+          <span>Demo Session</span>
         </div>
       </div>
 
@@ -90,21 +90,9 @@ export default function Layout({ activeAccountId }) {
           className={`${themeConfig.colors.headerBg} ${themeConfig.colors.headerText} py-4 px-8 shadow-sm flex items-center justify-between`}
         >
           <div>
-            <h1 className="text-lg font-semibold tracking-wide">
-              Shipment & Carrier Management
-            </h1>
+            <h1 className="text-lg font-semibold tracking-wide"></h1>
             <p className="text-xs text-slate-300">Environment: Sandbox</p>
           </div>
-
-          {/* Shows active account context if selected */}
-          {activeAccountId && (
-            <div className="bg-slate-700 bg-opacity-50 border border-slate-600 px-3 py-1 rounded text-xs">
-              Active Store ID:{" "}
-              <span className="font-mono font-bold text-emerald-400">
-                {activeAccountId}
-              </span>
-            </div>
-          )}
         </header>
 
         {/* Main Section Content Wrapper */}

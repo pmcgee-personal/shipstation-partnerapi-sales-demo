@@ -6,11 +6,12 @@ import {
   Settings,
   Settings2,
   Users,
+  MapPin,
 } from "lucide-react";
 import { themeConfig } from "./themeConfig";
 import CarrierSettings from "./CarrierSettings";
+import LocationsPage from "./LocationsPage";
 
-// Mock components for our sub-pages (we will build the real ones next!)
 const DashboardPlaceholder = () => (
   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
     <h2 className="text-xl font-bold text-gray-800 mb-2">WMS Dashboard</h2>
@@ -23,15 +24,26 @@ const DashboardPlaceholder = () => (
 
 export default function Layout({ activeAccountId }) {
   const [activePage, setActivePage] = useState(() => {
-    // If we have an active account saved, let's keep them on Carrier Settings for a seamless return flow
-    const savedAccount = localStorage.getItem("ss_active_account_id");
-    return savedAccount ? "carrier-settings" : "dashboard";
+    // Check if we specifically flagged a return from the Carrier Portal
+    const isReturningFromAuth = localStorage.getItem(
+      "ss_return_from_carrier_flow",
+    );
+
+    if (isReturningFromAuth) {
+      // Clear the breadcrumb so a normal page refresh tomorrow goes back to Dashboard
+      localStorage.removeItem("ss_return_from_carrier_flow");
+      return "carrier-settings";
+    }
+
+    // Default to dashboard for all standard page loads
+    return "dashboard";
   });
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "inventory", label: "Inventory", icon: Package, disabled: true },
     { id: "shipping", label: "Shipping", icon: Truck, disabled: true },
+    { id: "locations", label: "Locations", icon: MapPin },
     { id: "settings", label: "Carrier Settings", icon: Settings },
   ];
 
@@ -53,6 +65,7 @@ export default function Layout({ activeAccountId }) {
               const isActive =
                 activePage === item.id ||
                 (item.id === "settings" && activePage === "carrier-settings");
+
               return (
                 <button
                   key={item.id}
@@ -89,7 +102,7 @@ export default function Layout({ activeAccountId }) {
 
       {/* 2. Main Content Area */}
       <div className="flex-1 flex flex-col overflow-y-auto">
-        {/* Dark Teal Application Header (Matching your screenshot) */}
+        {/* Dark Teal Application Header */}
         <header
           className={`${themeConfig.colors.headerBg} ${themeConfig.colors.headerText} py-4 px-8 shadow-sm flex items-center justify-between`}
         >
@@ -101,9 +114,12 @@ export default function Layout({ activeAccountId }) {
 
         {/* Main Section Content Wrapper */}
         <main className={themeConfig.layout.containerClasses}>
-          {activePage === "dashboard" ? (
-            <DashboardPlaceholder />
-          ) : (
+          {/* Conditional rendering for our pages */}
+          {activePage === "dashboard" && <DashboardPlaceholder />}
+          {activePage === "locations" && (
+            <LocationsPage activeAccountId={activeAccountId} />
+          )}
+          {activePage === "carrier-settings" && (
             <CarrierSettings activeAccountId={activeAccountId} />
           )}
         </main>

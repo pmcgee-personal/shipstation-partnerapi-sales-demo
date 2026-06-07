@@ -41,6 +41,12 @@ export default function CarrierSettings({ activeAccountId }) {
       // Save the active account ID so we can restore it when they come back
       localStorage.setItem("ss_active_account_id", activeAccountId);
 
+      // --- PHASE 2: BREADCRUMB FOR RETURN FLOW ROUTING ---
+      // We set this flag right before redirecting so Layout knows to drop them back
+      // into Carrier Settings instead of the Dashboard on next load.
+      localStorage.setItem("ss_return_from_carrier_flow", "true");
+      // ----------------------------------------------------
+
       // Redirect the user's browser to the ShipStation portal
       window.location.href = redirect_url;
     } catch (err) {

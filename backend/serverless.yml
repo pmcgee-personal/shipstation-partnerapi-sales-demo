@@ -17,7 +17,6 @@ provider:
             - dynamodb:Scan
           Resource:
             - arn:aws:dynamodb:*:*:table/shipstation-partnerapi-demo-accounts
-
         - Effect: Allow
           Action:
             - ssm:GetParameter
@@ -54,7 +53,38 @@ functions:
     handler: handler.listCarriers
     events:
       - http:
-          # Note: We use a dynamic path parameter {accountId} here
           path: api/carriers/{accountId}
           method: get
           cors: true
+
+  listWarehouses:
+    handler: handler.listWarehouses
+    events:
+      - http:
+          path: api/warehouses/{accountId}
+          method: get
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - On-Behalf-Of
+
+  createWarehouse:
+    handler: handler.createWarehouse
+    events:
+      - http:
+          path: api/warehouses/{accountId}
+          method: post
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - On-Behalf-Of

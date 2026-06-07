@@ -1,0 +1,36 @@
+service: shipstation-partnerapi-sales-demo
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-west-2 # Change this if you used a different region during "aws configure"
+  stage: dev
+
+  # Give our Lambda functions permission to talk to DynamoDB and SSM Parameter Store
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:Scan
+          Resource:
+            - arn:aws:dynamodb:*:*:table/shipstation-partnerapi-demo-accounts
+        - Effect: Allow
+          Action:
+            - ssm:GetParameter
+          Resource:
+            - arn:aws:ssm:*:*:parameter/shipstation-demo/partner-api-key
+
+# We will define our Lambda endpoints here. 
+# Let's start with just the first one to test that our deployment works perfectly!
+functions:
+  createAccount:
+    handler: handler.createAccount
+    events:
+      - http:
+          path: api/accounts
+          method: post
+          cors: true # Automatically configures CORS preflight
+

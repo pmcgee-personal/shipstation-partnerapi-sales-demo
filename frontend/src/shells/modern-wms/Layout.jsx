@@ -8,6 +8,7 @@ import {
   Users,
 } from "lucide-react";
 import { themeConfig } from "./themeConfig";
+import CarrierSettings from "./CarrierSettings";
 
 // Mock components for our sub-pages (we will build the real ones next!)
 const DashboardPlaceholder = () => (
@@ -111,19 +112,7 @@ export default function Layout({ activeAccountId }) {
           {activePage === "dashboard" ? (
             <DashboardPlaceholder />
           ) : (
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-800 mb-2">
-                Carrier Integration Settings
-              </h2>
-              <p className="text-gray-500 mb-4">
-                You can configure the active connection with the ShipStation API
-                here.
-              </p>
-              {/* We will drop our interactive CarrierSettings page here next! */}
-              <div className="p-4 bg-yellow-50 text-yellow-800 rounded border border-yellow-100 text-sm">
-                Placeholder: Carrier Table and Connect button will load here.
-              </div>
-            </div>
+            <CarrierSettings activeAccountId={activeAccountId} />
           )}
         </main>
       </div>

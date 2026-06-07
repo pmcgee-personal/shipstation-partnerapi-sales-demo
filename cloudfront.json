@@ -1,0 +1,47 @@
+{
+  "DistributionConfig": {
+    "CallerReference": "shipstation-demo-ref-1780814867",
+    "Comment": "CDN for ShipStation Sales Demo Tool",
+    "DefaultRootObject": "index.html",
+    "Origins": {
+      "Quantity": 1,
+      "Items": [
+        {
+          "Id": "S3-Origin-ShipStation-Demo",
+          "DomainName": "shipstation-partnerapi-demo-hosting-1780814867.s3.us-west-2.amazonaws.com",
+          "S3OriginConfig": {
+            "OriginAccessIdentity": "origin-access-identity/cloudfront/E23HO00GEJXRB7"
+          }
+        }
+      ]
+    },
+    "DefaultCacheBehavior": {
+      "TargetOriginId": "S3-Origin-ShipStation-Demo",
+      "ViewerProtocolPolicy": "redirect-to-https",
+      "AllowedMethods": {
+        "Quantity": 2,
+        "Items": ["HEAD", "GET"],
+        "CachedMethods": {
+          "Quantity": 2,
+          "Items": ["HEAD", "GET"]
+        }
+      },
+      "ForwardedValues": {
+        "QueryString": false,
+        "Cookies": {
+          "Forward": "none"
+        },
+        "Headers": {
+          "Quantity": 0
+        },
+        "QueryStringCacheKeys": {
+          "Quantity": 0
+        }
+      },
+      "MinTTL": 0,
+      "DefaultTTL": 3600,
+      "MaxTTL": 86400
+    },
+    "Enabled": true
+  }
+}

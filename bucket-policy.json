@@ -1,0 +1,15 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowCloudFrontToReadGetFiles",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E23HO00GEJXRB7"
+            },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::shipstation-partnerapi-demo-hosting-1780814867/*"
+        }
+    ]
+}
+

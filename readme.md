@@ -91,6 +91,17 @@ To ensure users instantly see the latest deployment on the live domain, clear th
 aws cloudfront create-invalidation --distribution-id YOUR_CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
 ```
 
+### 4. Running Tests 🧪
+
+The frontend has a fully automated unit and UI component test suite powered by Vitest and React Testing Library. To run tests locally:
+
+````bash
+cd frontend
+# Run tests once
+npm run test
+
+# Run tests in watch mode (interactive)
+npm run test:watch
 ---
 
 ## 📂 File Structure
@@ -108,7 +119,7 @@ aws cloudfront create-invalidation --distribution-id YOUR_CLOUDFRONT_DISTRIBUTIO
     │   └── shells/modern-wms/     ← Swappable "Mock" WMS Layouts (Layout.jsx, CarrierSettings.jsx)
     ├── .env.local                 ← Local environment variables (API URL)
     └── package.json
-```
+````
 
 ## ✨ Core Features
 
@@ -116,4 +127,4 @@ aws cloudfront create-invalidation --distribution-id YOUR_CLOUDFRONT_DISTRIBUTIO
 - **Persistent Sessions:** Utilizes `localStorage` to perfectly maintain the active demo state when returning from the ShipStation API portal.
 - **Carrier Capability Badges:** Dynamically parses ShipStation API data to show valid domestic, international, and return services.
 - **Secure Architecture:** Partner API keys are never exposed to the frontend; all ShipStation API calls route securely through AWS Lambda.
-  """)
+  """

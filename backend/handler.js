@@ -209,3 +209,69 @@ module.exports.directLogin = async (event) => {
     };
   }
 };
+module.exports.listCarriers = async (event) => {
+  try {
+    // 1. Extract the dynamic {accountId} from the URL path
+    const accountId = event.pathParameters?.accountId;
+
+    if (!accountId) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "accountId is required in the path" }),
+      };
+    }
+
+    // 2. Fetch the secure Partner API Key from AWS SSM
+    const ssmCommand = new GetParameterCommand({
+      Name: "/shipstation-demo/partner-api-key",
+      WithDecryption: true,
+    });
+    const ssmResponse = await ssmClient.send(ssmCommand);
+    const partnerApiKey = ssmResponse.Parameter.Value;
+
+    // 3. Request the connected carriers list ON BEHALF OF the child account
+    const carriersResponse = await fetch(
+      "https://api.shipengine.com/v1/carriers",
+      {
+        method: "GET",
+        headers: {
+          "API-Key": partnerApiKey,
+          "On-Behalf-Of": accountId.toString(),
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!carriersResponse.ok) {
+      const errorText = await carriersResponse.text();
+      console.error("List Carriers API Error:", errorText);
+      return {
+        statusCode: carriersResponse.status,
+        body: JSON.stringify({
+          error: "Failed to fetch carriers from ShipStation API",
+          details: errorText,
+        }),
+      };
+    }
+
+    const carriersData = await carriersResponse.json();
+
+    // 4. Return the list of carriers to the frontend
+    return {
+      statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*", // Required for CORS
+        "Access-Control-Allow-Credentials": true,
+      },
+      body: JSON.stringify(carriersData),
+    };
+  } catch (error) {
+    console.error("Error listing carriers:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: "Internal Server Error during carrier fetch",
+      }),
+    };
+  }
+};

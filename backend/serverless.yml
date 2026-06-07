@@ -48,3 +48,12 @@ functions:
           path: api/direct-login
           method: post
           cors: true
+
+  listCarriers:
+    handler: handler.listCarriers
+    events:
+      - http:
+          # Note: We use a dynamic path parameter {accountId} here
+          path: api/carriers/{accountId}
+          method: get
+          cors: true

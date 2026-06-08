@@ -123,8 +123,7 @@ npm run test:watch
 
 ## ✨ Core Features
 
-- **One-Click Account Provisioning:** Automatically generates realistic demo companies and provisions real ShipStation API accounts.
+- **One-Click Account Provisioning:** Automatically generates realistic demo companies and provisions real ShipStation API accounts with Locations (warehouses).
 - **Persistent Sessions:** Utilizes `localStorage` to perfectly maintain the active demo state when returning from the ShipStation API portal.
 - **Carrier Capability Badges:** Dynamically parses ShipStation API data to show valid domestic, international, and return services.
 - **Secure Architecture:** Partner API keys are never exposed to the frontend; all ShipStation API calls route securely through AWS Lambda.
-  """

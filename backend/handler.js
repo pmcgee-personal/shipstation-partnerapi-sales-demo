@@ -86,7 +86,7 @@ const WAREHOUSE_LOCATIONS = [
     country_code: "US",
   },
   {
-    name: "Auctane LLC",
+    name: "GlobalTranz",
     address_line1: "211 E. 7th Street, Suite 620",
     city: "Austin",
     state: "TX",

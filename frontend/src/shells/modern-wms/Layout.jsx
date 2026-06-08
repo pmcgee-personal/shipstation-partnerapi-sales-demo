@@ -8,19 +8,11 @@ import {
   Users,
   MapPin,
 } from "lucide-react";
+
 import { themeConfig } from "./themeConfig";
 import CarrierSettings from "./CarrierSettings";
 import LocationsPage from "./LocationsPage";
-
-const DashboardPlaceholder = () => (
-  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-    <h2 className="text-xl font-bold text-gray-800 mb-2">WMS Dashboard</h2>
-    <p className="text-gray-500">
-      Welcome to Apex Warehouse Management System. Select Carrier Settings to
-      get started.
-    </p>
-  </div>
-);
+import DashboardPage from "./DashboardPage"; // <-- Added our new import
 
 export default function Layout({ activeAccountId }) {
   const [activePage, setActivePage] = useState(() => {
@@ -115,7 +107,8 @@ export default function Layout({ activeAccountId }) {
         {/* Main Section Content Wrapper */}
         <main className={themeConfig.layout.containerClasses}>
           {/* Conditional rendering for our pages */}
-          {activePage === "dashboard" && <DashboardPlaceholder />}
+          {/* --> Updated to render our new page component <-- */}
+          {activePage === "dashboard" && <DashboardPage />}
           {activePage === "locations" && (
             <LocationsPage activeAccountId={activeAccountId} />
           )}

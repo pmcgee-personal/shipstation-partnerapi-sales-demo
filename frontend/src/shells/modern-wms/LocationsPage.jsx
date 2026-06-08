@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MapPin, Plus, Loader2, AlertCircle } from "lucide-react";
+import { MapPin, Plus, Loader2, AlertCircle, Info } from "lucide-react";
 
 // Pull the endpoint from your .env.local securely
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -74,18 +74,18 @@ export default function LocationsPage({ activeAccountId }) {
     }
   };
 
-  // Guard state if no account is selected in WMS
+  // If no demo account is selected from the top DemoBar
   if (!activeAccountId) {
     return (
-      <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100 text-center">
-        <MapPin className="mx-auto text-gray-300 mb-3" size={40} />
-        <h2 className="text-xl font-medium text-gray-800 mb-2">
-          No Active Account
-        </h2>
-        <p className="text-gray-500">
-          Please select or provision an account to view and manage warehouse
-          locations.
-        </p>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 flex items-center space-x-4">
+        <Info className="text-blue-500 w-8 h-8" />
+        <div>
+          <h3 className="font-bold text-blue-800">No Demo Account Selected</h3>
+          <p className="text-blue-700 text-sm">
+            Please select a demo account from the control bar at the top of the
+            page to begin.
+          </p>
+        </div>
       </div>
     );
   }

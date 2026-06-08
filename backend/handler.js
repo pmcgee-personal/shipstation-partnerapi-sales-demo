@@ -22,7 +22,7 @@ const WAREHOUSE_LOCATIONS = [
     country_code: "US",
   },
   {
-    name: "Worldwide Express",
+    name: "Unishippers",
     address_line1: "2323 Victory Avenue",
     city: "Dallas",
     state: "TX",
@@ -30,7 +30,7 @@ const WAREHOUSE_LOCATIONS = [
     country_code: "US",
   },
   {
-    name: "Worldwide Express",
+    name: "GlobalTranz",
     address_line1: "2700 Commerce Street, Suite 1500",
     city: "Dallas",
     state: "TX",
@@ -38,7 +38,7 @@ const WAREHOUSE_LOCATIONS = [
     country_code: "US",
   },
   {
-    name: "Worldwide Express",
+    name: "Jear Logistics",
     address_line1: "Tempe Office",
     city: "Tempe",
     state: "AZ",
@@ -46,7 +46,7 @@ const WAREHOUSE_LOCATIONS = [
     country_code: "US",
   },
   {
-    name: "Worldwide Express",
+    name: "BLX Logistics",
     address_line1: "Culver City Office",
     city: "Culver City",
     state: "CA",
@@ -62,7 +62,7 @@ const WAREHOUSE_LOCATIONS = [
     country_code: "US",
   },
   {
-    name: "Worldwide Express",
+    name: "Unishippers",
     address_line1: "San Diego Office",
     city: "San Diego",
     state: "CA",
@@ -70,7 +70,7 @@ const WAREHOUSE_LOCATIONS = [
     country_code: "US",
   },
   {
-    name: "ShipStation / Auctane",
+    name: "ShipStation",
     address_line1: "4301 Bull Creek Rd, Suite 300",
     city: "Austin",
     state: "TX",
@@ -78,7 +78,7 @@ const WAREHOUSE_LOCATIONS = [
     country_code: "US",
   },
   {
-    name: "Auctane / Stamps.com",
+    name: "ShipStation",
     address_line1: "1990 E. Grand Avenue",
     city: "El Segundo",
     state: "CA",

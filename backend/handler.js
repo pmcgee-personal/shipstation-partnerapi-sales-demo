@@ -200,6 +200,7 @@ module.exports.createAccount = async (event) => {
             ship_via_code: "USPSGA",
             carrier_id: uspsCarrier.carrier_id,
             service_code: "usps_ground_advantage",
+            package_type: "package",
           });
           console.log(
             `Successfully mapped USPSGA to carrier_id: ${uspsCarrier.carrier_id}`,
@@ -353,15 +354,21 @@ module.exports.addShipVia = async (event) => {
   try {
     const { accountId } = event.pathParameters;
     const body = JSON.parse(event.body || "{}");
-    const { ship_via_code, carrier_id, service_code } = body;
+    const { ship_via_code, carrier_id, service_code, package_type } = body;
 
-    if (!accountId || !ship_via_code || !carrier_id || !service_code) {
+    if (
+      !accountId ||
+      !ship_via_code ||
+      !carrier_id ||
+      !service_code ||
+      !package_type
+    ) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
         body: JSON.stringify({
           error:
-            "Missing required fields: ship_via_code, carrier_id, and service_code are all required.",
+            "Missing required fields: ship_via_code, carrier_id, service_code, and package_type are all required.",
         }),
       };
     }
@@ -396,7 +403,7 @@ module.exports.addShipVia = async (event) => {
 
     const newShipVias = [
       ...shipVias,
-      { ship_via_code, carrier_id, service_code },
+      { ship_via_code, carrier_id, service_code, package_type },
     ];
 
     await docClient.send(

@@ -19,27 +19,28 @@ export default function LocationTable({ warehouses, isLoading }) {
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
+            {/* Corrected Headers: Matches 'text-sm font-semibold text-gray-700' */}
             <th
               scope="col"
-              className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              className="px-6 py-3.5 text-left text-sm font-semibold text-gray-700"
             >
               Location Name
             </th>
             <th
               scope="col"
-              className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              className="px-6 py-3.5 text-left text-sm font-semibold text-gray-700"
             >
               City
             </th>
             <th
               scope="col"
-              className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              className="px-6 py-3.5 text-left text-sm font-semibold text-gray-700"
             >
               State
             </th>
             <th
               scope="col"
-              className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              className="px-6 py-3.5 text-left text-sm font-semibold text-gray-700"
             >
               Country
             </th>

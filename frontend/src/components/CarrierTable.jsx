@@ -47,7 +47,7 @@ export default function CarrierTable({ carriers, isLoading }) {
               scope="col"
               className={`px-6 py-3 text-left font-semibold ${themeConfig.colors.tableHeaderText}`}
             >
-              Carrier Name
+              Carrier
             </th>
             <th
               scope="col"
@@ -59,7 +59,7 @@ export default function CarrierTable({ carriers, isLoading }) {
               scope="col"
               className={`px-6 py-3 text-left font-semibold ${themeConfig.colors.tableHeaderText}`}
             >
-              Nickname
+              Account Nickname
             </th>
             <th
               scope="col"

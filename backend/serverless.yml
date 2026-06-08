@@ -6,22 +6,21 @@ provider:
   region: us-west-2
   stage: dev
 
-  # Give our Lambda functions permission to talk to DynamoDB and SSM Parameter Store
-  iam:
-    role:
-      statements:
-        - Effect: Allow
-          Action:
-            - dynamodb:PutItem
-            - dynamodb:GetItem
-            - dynamodb:Scan
-          Resource:
-            - arn:aws:dynamodb:*:*:table/shipstation-partnerapi-demo-accounts
-        - Effect: Allow
-          Action:
-            - ssm:GetParameter
-          Resource:
-            - arn:aws:ssm:*:*:parameter/shipstation-demo/*
+  # For backwards-compatibility with Serverless v2, we declare permissions here:
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:Scan
+        - dynamodb:UpdateItem # Permission to update records for adding/deleting ship vias
+      Resource:
+        - arn:aws:dynamodb:*:*:table/shipstation-partnerapi-demo-accounts
+    - Effect: Allow
+      Action:
+        - ssm:GetParameter
+      Resource:
+        - arn:aws:ssm:*:*:parameter/shipstation-demo/*
 
 # We will define our Lambda endpoints here.
 functions:
@@ -38,6 +37,15 @@ functions:
     events:
       - http:
           path: api/accounts
+          method: get
+          cors: true
+
+  # New endpoint to get a single account's details, including ship vias
+  getAccount:
+    handler: handler.getAccount
+    events:
+      - http:
+          path: api/accounts/{accountId}
           method: get
           cors: true
 
@@ -63,15 +71,7 @@ functions:
       - http:
           path: api/warehouses/{accountId}
           method: get
-          cors:
-            origin: "*"
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - On-Behalf-Of
+          cors: true
 
   createWarehouse:
     handler: handler.createWarehouse
@@ -79,12 +79,21 @@ functions:
       - http:
           path: api/warehouses/{accountId}
           method: post
-          cors:
-            origin: "*"
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - On-Behalf-Of
+          cors: true
+
+  # --- SHIP VIA ENDPOINTS ---
+  addShipVia:
+    handler: handler.addShipVia
+    events:
+      - http:
+          path: api/accounts/{accountId}/shipvia
+          method: post
+          cors: true
+
+  deleteShipVia:
+    handler: handler.deleteShipVia
+    events:
+      - http:
+          path: api/accounts/{accountId}/shipvia/{shipViaCode}
+          method: delete
+          cors: true

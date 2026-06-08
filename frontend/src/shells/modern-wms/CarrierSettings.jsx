@@ -1,31 +1,39 @@
+// frontend/src/shells/modern-wms/CarrierSettings.jsx
 import React, { useState, useEffect } from "react";
 import { api } from "../../services/api";
 import { themeConfig } from "./themeConfig";
-import { ArrowRight, Zap, Info, RefreshCw } from "lucide-react";
-import CarrierTable from "../../components/CarrierTable"; // Import our new table!
+import { Zap, Info, RefreshCw } from "lucide-react";
+import CarrierTable from "../../components/CarrierTable";
+import ShipViaTable from "../../components/ShipViaTable"; // <-- Added our new Ship Via component
 
 export default function CarrierSettings({ activeAccountId }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [carriers, setCarriers] = useState([]);
+  const [shipVias, setShipVias] = useState([]); // State to hold active account's mappings
   const [error, setError] = useState(null);
 
-  // Automatically fetch carriers whenever a new demo account is selected
+  // Automatically fetch carriers and account configurations on selection change
   useEffect(() => {
     if (activeAccountId) {
-      loadCarriers();
+      loadCarrierSettings();
     }
   }, [activeAccountId]);
 
-  const loadCarriers = async () => {
+  const loadCarrierSettings = async () => {
     setIsSyncing(true);
     setError(null);
     try {
-      const data = await api.listCarriers(activeAccountId);
-      setCarriers(data);
+      // 1. Load active account details (which contains our database shipVias array)
+      const accountData = await api.getAccount(activeAccountId);
+      setShipVias(accountData.shipVias || []);
+
+      // 2. Load connected carrier configurations from ShipStation API
+      const carriersData = await api.listCarriers(activeAccountId);
+      setCarriers(carriersData);
     } catch (err) {
-      console.error("Failed to load carriers:", err);
-      setError("Failed to sync carriers from ShipStation.");
+      console.error("Failed to load carrier settings floor data:", err);
+      setError("Failed to sync configurations from active account.");
     } finally {
       setIsSyncing(false);
     }
@@ -35,24 +43,46 @@ export default function CarrierSettings({ activeAccountId }) {
     setIsRedirecting(true);
     setError(null);
     try {
-      // Call our backend to get the ephemeral redirect URL
       const { redirect_url } = await api.getDirectLoginUrl(activeAccountId);
-
-      // Save the active account ID so we can restore it when they come back
       localStorage.setItem("ss_active_account_id", activeAccountId);
-
-      // --- PHASE 2: BREADCRUMB FOR RETURN FLOW ROUTING ---
-      // We set this flag right before redirecting so Layout knows to drop them back
-      // into Carrier Settings instead of the Dashboard on next load.
       localStorage.setItem("ss_return_from_carrier_flow", "true");
-      // ----------------------------------------------------
-
-      // Redirect the user's browser to the ShipStation portal
       window.location.href = redirect_url;
     } catch (err) {
       console.error("Direct Login Failed:", err);
       setError(err.message || "Failed to generate connection link.");
       setIsRedirecting(false);
+    }
+  };
+
+  // Add Ship Via handler callback
+  const handleAddShipVia = async (shipViaData) => {
+    try {
+      const updatedAccount = await api.addShipVia(activeAccountId, shipViaData);
+      setShipVias(updatedAccount.shipVias || []);
+    } catch (err) {
+      console.error("Add Ship Via Failed:", err);
+      throw new Error(err.message || "Failed to add mapping.");
+    }
+  };
+
+  // Delete Ship Via handler callback
+  const handleDeleteShipVia = async (shipViaCode) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete the mapping for "${shipViaCode}"?`,
+      )
+    ) {
+      return;
+    }
+    try {
+      const updatedAccount = await api.deleteShipVia(
+        activeAccountId,
+        shipViaCode,
+      );
+      setShipVias(updatedAccount.shipVias || []);
+    } catch (err) {
+      console.error("Delete Ship Via Failed:", err);
+      setError(err.message || "Failed to remove mapping.");
     }
   };
 
@@ -83,11 +113,9 @@ export default function CarrierSettings({ activeAccountId }) {
             Click "Connect Carriers" to manage your carrier accounts
           </p>
         </div>
-
         <div className="flex space-x-3">
-          {/* Manual Sync Button */}
           <button
-            onClick={loadCarriers}
+            onClick={loadCarrierSettings}
             disabled={isSyncing || isRedirecting}
             className={`inline-flex items-center justify-center px-3 py-2.5 rounded-md font-medium text-sm transition-colors border border-gray-200 text-gray-600 hover:bg-gray-50 ${
               isSyncing ? "opacity-50 cursor-not-allowed" : ""
@@ -97,7 +125,6 @@ export default function CarrierSettings({ activeAccountId }) {
             <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} />
           </button>
 
-          {/* Connect Button */}
           <button
             onClick={handleConnectClick}
             disabled={isRedirecting || isSyncing}
@@ -125,8 +152,17 @@ export default function CarrierSettings({ activeAccountId }) {
         </div>
       )}
 
-      {/* Drop in the interactive table! */}
+      {/* Main Carrier Connection List */}
       <CarrierTable carriers={carriers} isLoading={isSyncing} />
+
+      {/* New Ship Via Mapping System (renders underneath the carriers list) */}
+      <ShipViaTable
+        shipVias={shipVias}
+        carriers={carriers}
+        onAddShipVia={handleAddShipVia}
+        onDeleteShipVia={handleDeleteShipVia}
+        isSyncing={isSyncing}
+      />
     </div>
   );
 }

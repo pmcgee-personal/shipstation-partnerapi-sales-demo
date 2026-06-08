@@ -100,7 +100,7 @@ export default function LocationsPage({ activeAccountId }) {
             Warehouse Locations
           </h2>
           <p className="text-gray-500 mt-1">
-            Manage physical origin locations for this account.
+            Manage physical origin locations for this account
           </p>
         </div>
 

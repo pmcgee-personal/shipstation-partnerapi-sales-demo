@@ -1,22 +1,32 @@
 // frontend/src/shells/modern-wms/CarrierSettings.jsx
+
 import React, { useState, useEffect } from "react";
 import { api } from "../../services/api";
 import { themeConfig } from "./themeConfig";
-import { Zap, Info, RefreshCw } from "lucide-react";
+import { Zap, Info, RefreshCw, Plus, Loader2 } from "lucide-react"; // <-- Added Plus and Loader2
 import CarrierTable from "../../components/CarrierTable";
-import ShipViaTable from "../../components/ShipViaTable"; // <-- Added our new Ship Via component
+import ShipViaTable from "../../components/ShipViaTable";
+import LocationTable from "../../components/LocationTable"; // <-- Added LocationTable
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // <-- Added API base URL
 
 export default function CarrierSettings({ activeAccountId }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [carriers, setCarriers] = useState([]);
-  const [shipVias, setShipVias] = useState([]); // State to hold active account's mappings
+  const [shipVias, setShipVias] = useState([]);
   const [error, setError] = useState(null);
 
-  // Automatically fetch carriers and account configurations on selection change
+  // --- NEW: Warehouse States ---
+  const [warehouses, setWarehouses] = useState([]);
+  const [isLoadingWarehouses, setIsLoadingWarehouses] = useState(false);
+  const [isAddingWarehouse, setIsAddingWarehouse] = useState(false);
+
+  // Automatically fetch carriers, configs, and warehouses on selection change
   useEffect(() => {
     if (activeAccountId) {
       loadCarrierSettings();
+      fetchWarehouses(); // <-- Call our new warehouse fetcher
     }
   }, [activeAccountId]);
 
@@ -24,11 +34,11 @@ export default function CarrierSettings({ activeAccountId }) {
     setIsSyncing(true);
     setError(null);
     try {
-      // 1. Load active account details (which contains our database shipVias array)
+      // 1. Load active account details
       const accountData = await api.getAccount(activeAccountId);
       setShipVias(accountData.shipVias || []);
 
-      // 2. Load connected carrier configurations from ShipStation API
+      // 2. Load connected carrier configurations
       const carriersData = await api.listCarriers(activeAccountId);
       setCarriers(carriersData);
     } catch (err) {
@@ -36,6 +46,49 @@ export default function CarrierSettings({ activeAccountId }) {
       setError("Failed to sync configurations from active account.");
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  // --- NEW: Warehouse Fetch Logic (migrated from LocationsPage) ---
+  const fetchWarehouses = async () => {
+    if (!activeAccountId) return;
+    setIsLoadingWarehouses(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/warehouses/${activeAccountId}`,
+      );
+      if (!response.ok)
+        throw new Error(
+          "Failed to load warehouse locations from ShipStation API.",
+        );
+      const data = await response.json();
+      setWarehouses(data.warehouses || []);
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setIsLoadingWarehouses(false);
+    }
+  };
+
+  const handleAddLocation = async () => {
+    if (!activeAccountId) return;
+    setIsAddingWarehouse(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/warehouses/${activeAccountId}`,
+        { method: "POST" },
+      );
+      if (!response.ok)
+        throw new Error("Failed to create new warehouse on ShipStation API.");
+      await fetchWarehouses(); // Refresh list on success
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setIsAddingWarehouse(false);
     }
   };
 
@@ -54,7 +107,6 @@ export default function CarrierSettings({ activeAccountId }) {
     }
   };
 
-  // Add Ship Via handler callback
   const handleAddShipVia = async (shipViaData) => {
     try {
       const updatedAccount = await api.addShipVia(activeAccountId, shipViaData);
@@ -65,7 +117,6 @@ export default function CarrierSettings({ activeAccountId }) {
     }
   };
 
-  // Delete Ship Via handler callback
   const handleDeleteShipVia = async (shipViaCode) => {
     if (
       !window.confirm(
@@ -86,7 +137,6 @@ export default function CarrierSettings({ activeAccountId }) {
     }
   };
 
-  // If no demo account is selected from the top DemoBar
   if (!activeAccountId) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 flex items-center space-x-4">
@@ -108,23 +158,30 @@ export default function CarrierSettings({ activeAccountId }) {
     >
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">Carrier Accounts</h2>
+          <h2 className="text-xl font-bold text-gray-800">Carrier Settings</h2>
           <p className="text-gray-500 mt-1">
-            Click "Connect Carriers" to manage your carrier accounts
+            Click "Connect Carriers" to manage your carrier accounts.
           </p>
         </div>
         <div className="flex space-x-3">
           <button
-            onClick={loadCarrierSettings}
-            disabled={isSyncing || isRedirecting}
+            onClick={() => {
+              loadCarrierSettings();
+              fetchWarehouses();
+            }}
+            disabled={isSyncing || isLoadingWarehouses || isRedirecting}
             className={`inline-flex items-center justify-center px-3 py-2.5 rounded-md font-medium text-sm transition-colors border border-gray-200 text-gray-600 hover:bg-gray-50 ${
-              isSyncing ? "opacity-50 cursor-not-allowed" : ""
+              isSyncing || isLoadingWarehouses
+                ? "opacity-50 cursor-not-allowed"
+                : ""
             }`}
             title="Sync carrier data"
           >
-            <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} />
+            <RefreshCw
+              size={16}
+              className={isSyncing || isLoadingWarehouses ? "animate-spin" : ""}
+            />
           </button>
-
           <button
             onClick={handleConnectClick}
             disabled={isRedirecting || isSyncing}
@@ -148,14 +205,14 @@ export default function CarrierSettings({ activeAccountId }) {
 
       {error && (
         <div className="mt-4 bg-red-50 text-red-700 p-3 rounded-md border border-red-200 text-sm">
-          <strong>Sync Error:</strong> {error}
+          <strong>Error:</strong> {error}
         </div>
       )}
 
       {/* Main Carrier Connection List */}
       <CarrierTable carriers={carriers} isLoading={isSyncing} />
 
-      {/* New Ship Via Mapping System (renders underneath the carriers list) */}
+      {/* Ship Via Mapping System */}
       <ShipViaTable
         shipVias={shipVias}
         carriers={carriers}
@@ -163,6 +220,41 @@ export default function CarrierSettings({ activeAccountId }) {
         onDeleteShipVia={handleDeleteShipVia}
         isSyncing={isSyncing}
       />
+
+      {/* NEW: Warehouse Locations Section */}
+      <div className="mt-12 pt-8 border-t border-gray-200">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">
+              Warehouse Locations
+            </h2>
+            <p className="text-gray-500 mt-1">
+              Manage physical origin locations for this account.
+            </p>
+          </div>
+          <button
+            onClick={handleAddLocation}
+            disabled={isAddingWarehouse || isLoadingWarehouses}
+            className={`inline-flex shrink-0 items-center justify-center px-5 py-2.5 rounded-md font-semibold text-sm transition-colors ${themeConfig.colors.primaryButtonBg} ${themeConfig.colors.primaryButtonText} ${themeConfig.colors.primaryButtonHover} disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {isAddingWarehouse ? (
+              <>
+                <Loader2 size={16} className="animate-spin mr-2" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <Plus size={16} className="mr-2" />
+                Add Location
+              </>
+            )}
+          </button>
+        </div>
+        <LocationTable
+          warehouses={warehouses}
+          isLoading={isLoadingWarehouses}
+        />
+      </div>
     </div>
   );
 }

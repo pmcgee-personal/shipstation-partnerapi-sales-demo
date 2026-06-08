@@ -6,12 +6,10 @@ import {
   Settings,
   Settings2,
   Users,
-  MapPin,
 } from "lucide-react";
 
 import { themeConfig } from "./themeConfig";
 import CarrierSettings from "./CarrierSettings";
-import LocationsPage from "./LocationsPage";
 import DashboardPage from "./DashboardPage"; // <-- Added our new import
 
 export default function Layout({ activeAccountId }) {
@@ -35,7 +33,6 @@ export default function Layout({ activeAccountId }) {
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "inventory", label: "Inventory", icon: Package, disabled: true },
     { id: "shipping", label: "Shipping", icon: Truck, disabled: true },
-    { id: "locations", label: "Locations", icon: MapPin },
     { id: "settings", label: "Carrier Settings", icon: Settings },
   ];
 
@@ -109,9 +106,6 @@ export default function Layout({ activeAccountId }) {
           {/* Conditional rendering for our pages */}
           {/* --> Updated to render our new page component <-- */}
           {activePage === "dashboard" && <DashboardPage />}
-          {activePage === "locations" && (
-            <LocationsPage activeAccountId={activeAccountId} />
-          )}
           {activePage === "carrier-settings" && (
             <CarrierSettings activeAccountId={activeAccountId} />
           )}

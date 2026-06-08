@@ -3,23 +3,26 @@ import React from "react";
 import { Loader2 } from "lucide-react";
 
 export default function LocationTable({ warehouses, isLoading }) {
-  // frontend/src/components/LocationTable.jsx
   if (isLoading) {
     return (
-      <div className="mt-6 flex justify-center items-center py-24 bg-white rounded-lg shadow-sm border border-gray-100">
-        <Loader2
-          data-testid="loader" // <-- Add this line
-          className="animate-spin text-blue-600 h-8 w-8"
-        />
+      <div className="mt-6 border border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
+        {/* UPDATED: Removed "text-sm font-normal" to match the default base size of CarrierTable */}
+        <p className="text-gray-500 flex items-center justify-center">
+          <Loader2
+            data-testid="loader"
+            className="animate-spin text-blue-600 h-4 w-4 mr-2"
+          />
+          Syncing warehouse configurations...
+        </p>
       </div>
     );
   }
+
   return (
     <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            {/* Corrected Headers: Matches 'text-sm font-semibold text-gray-700' */}
             <th
               scope="col"
               className="px-6 py-3.5 text-left text-sm font-semibold text-gray-700"

@@ -109,10 +109,9 @@ export default function ShipViaTable({
     <div className="mt-8 pt-8 border-t border-gray-200">
       <div className="flex justify-between items-center gap-8 mb-6">
         <div>
-          <h3 className="text-xl font-bold text-gray-800">Ship Via Mappings</h3>
+          <h3 className="text-xl font-bold text-gray-800">Ship Via</h3>
           <p className="text-gray-500 mt-1">
-            Map internal shorthand shipping codes to specific ShipStation
-            carrier services and packaging.
+            Map internal shipping codes to carrier services and packaging.
           </p>
         </div>
         {!isAdding && (
@@ -122,7 +121,7 @@ export default function ShipViaTable({
             className={`inline-flex shrink-0 items-center justify-center px-5 py-2.5 rounded-md font-semibold text-sm transition-colors ${themeConfig.colors.primaryButtonBg} ${themeConfig.colors.primaryButtonText} ${themeConfig.colors.primaryButtonHover} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <Plus size={16} className="mr-2" />
-            Add Mapping
+            Add Ship Via
           </button>
         )}
       </div>
@@ -272,7 +271,7 @@ export default function ShipViaTable({
                 >
                   {carriers.length === 0
                     ? "Connect a carrier first to enable Ship Via mapping."
-                    : "No Ship Via configurations defined. Click 'Add Mapping' to begin."}
+                    : "No Ship Via configurations defined. Click 'Add Ship Via' to begin."}
                 </td>
               </tr>
             ) : (

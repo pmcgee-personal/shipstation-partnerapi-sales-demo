@@ -42,7 +42,7 @@ describe("ShipViaTable Component", () => {
 
     expect(
       screen.getByText(
-        "No Ship Via configurations defined. Click 'Add Mapping' to begin.",
+        "No Ship Via configurations defined. Click 'Add Ship Via' to begin.",
       ),
     ).toBeInTheDocument();
   });
@@ -98,8 +98,8 @@ describe("ShipViaTable Component", () => {
       />,
     );
 
-    // 1. Click "Add Mapping" button to open form
-    fireEvent.click(screen.getByText("Add Mapping"));
+    // 1. Click "Add Ship Via" button to open form
+    fireEvent.click(screen.getByText("Add Ship Via"));
 
     // 2. Enter Ship Via Code
     const codeInput = screen.getByPlaceholderText("e.g. USPSGA");

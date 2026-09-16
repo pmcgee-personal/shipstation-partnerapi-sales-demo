@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import PropTypes from "prop-types";
 import {
   LayoutDashboard,
   Package,
@@ -12,7 +13,10 @@ import { themeConfig } from "./themeConfig";
 import CarrierSettings from "./CarrierSettings";
 import DashboardPage from "./DashboardPage"; // <-- Added our new import
 
-export default function Layout({ activeAccountId }) {
+function Layout({ activeAccountId }) {
+  Layout.propTypes = {
+    activeAccountId: PropTypes.string,
+  };
   const [activePage, setActivePage] = useState(() => {
     // Check if we specifically flagged a return from the Carrier Portal
     const isReturningFromAuth = localStorage.getItem(
@@ -114,3 +118,5 @@ export default function Layout({ activeAccountId }) {
     </div>
   );
 }
+
+export default Layout;

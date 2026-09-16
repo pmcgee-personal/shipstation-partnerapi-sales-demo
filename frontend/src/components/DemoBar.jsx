@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import {
   PlaySquare,
   Plus,
@@ -14,7 +15,11 @@ import { generateDemoDetails } from "../utils/demoUtils";
 
 // 2. The inline generator definition has been completely removed.
 
-export default function DemoBar({ activeAccountId, setActiveAccountId }) {
+function DemoBar({ activeAccountId, setActiveAccountId }) {
+  DemoBar.propTypes = {
+    activeAccountId: PropTypes.string,
+    setActiveAccountId: PropTypes.func,
+  };
   const [accounts, setAccounts] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(true);
@@ -143,3 +148,5 @@ export default function DemoBar({ activeAccountId, setActiveAccountId }) {
     </div>
   );
 }
+
+export default DemoBar;

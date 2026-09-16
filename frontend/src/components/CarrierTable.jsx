@@ -1,8 +1,13 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import PropTypes from "prop-types";
 import { themeConfig } from "../shells/modern-wms/themeConfig";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
-export default function CarrierTable({ carriers, isLoading }) {
+function CarrierTable({ carriers, isLoading }) {
+  CarrierTable.propTypes = {
+    carriers: PropTypes.arrayOf(PropTypes.object),
+    isLoading: PropTypes.bool,
+  };
   const [expandedRows, setExpandedRows] = useState([]);
 
   const handleRowClick = (carrierId) => {
@@ -31,7 +36,7 @@ export default function CarrierTable({ carriers, isLoading }) {
           No carriers are currently connected.
         </p>
         <p className="text-gray-400 text-sm mt-1">
-          Click "Connect to ShipStation API" above to configure your carriers.
+          Click &quot;Connect to ShipStation API&quot; above to configure your carriers.
         </p>
       </div>
     );
@@ -73,7 +78,7 @@ export default function CarrierTable({ carriers, isLoading }) {
           {carriers.map((carrier) => {
             const isExpanded = expandedRows.includes(carrier.carrier_id);
             return (
-              <React.Fragment key={carrier.carrier_id}>
+              <>
                 {/* Main Carrier Row */}
                 <tr
                   className="hover:bg-gray-50 transition-colors cursor-pointer"
@@ -150,7 +155,7 @@ export default function CarrierTable({ carriers, isLoading }) {
                     </td>
                   </tr>
                 )}
-              </React.Fragment>
+              </>
             );
           })}
         </tbody>
@@ -158,3 +163,5 @@ export default function CarrierTable({ carriers, isLoading }) {
     </div>
   );
 }
+
+export default CarrierTable;

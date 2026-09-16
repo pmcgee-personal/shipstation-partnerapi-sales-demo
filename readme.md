@@ -1,129 +1,116 @@
 # ShipStation Partner API Sales Demo
 
-## Overview
+Full-stack demo of ShipStation Partner API with seamless direct login, dynamic carrier syncing, and account provisioning.
 
-This repository contains a full-stack, live demonstration of the ShipStation Partner API. It showcases the "Seamless Direct Login" flow, dynamic carrier syncing, and auto-provisioning of child accounts.
-
-The architecture is split into two parts:
-
-1. **Backend:** AWS Serverless (Node.js v20, API Gateway, Lambda, DynamoDB).
-2. **Frontend:** React/Vite application hosted on AWS S3 + CloudFront, featuring a swappable WMS layout engine.
+**Stack:** React + Vite (frontend) | Node.js 20 Lambda + API Gateway (backend) | DynamoDB | S3 + CloudFront
 
 ---
 
-## 🛠 Backend Deployment
+## Quick Setup
 
 ### Prerequisites
-
 - Node.js 20+
-- AWS CLI configured with administrator access
-- Serverless Framework globally installed (`npm install -g serverless`)
+- AWS CLI + credentials
+- Serverless Framework: `npm install -g serverless`
 
-### 1. Configure AWS SSM Parameter Store
+### 1. AWS Parameter Store (one-time)
 
-The backend requires two secure parameters to function. Run these AWS CLI commands to set them up in your AWS environment (replace `YOUR_API_KEY` and `YOUR_THEME_ID` with actual values):
+Store your ShipStation API credentials:
 
-````bash
-# 1. Store your ShipStation Partner API Key (SecureString)
+```bash
 aws ssm put-parameter \
   --name "/shipstation-demo/partner-api-key" \
-  --value "YOUR_API_KEY_HERE" \
-  --type SecureString \
-  --overwrite
+  --value "YOUR_API_KEY" \
+  --type SecureString --overwrite
 
-# 2. Store your ShipStation Theme ID (String)
 aws ssm put-parameter \
   --name "/shipstation-demo/theme-id" \
-  --value "YOUR_THEME_ID_HERE" \
-  --type String \
-  --overwrite
+  --value "YOUR_THEME_ID" \
+  --type String --overwrite
+```
 
+### 2. GitHub Actions Secrets (one-time)
 
-### 2. Deploy to AWS
-Navigate to the backend directory, install dependencies, and deploy:
+Add to repository settings → Secrets and variables → Actions:
 
+| Name | Value |
+|------|-------|
+| `TABLE_NAME` | `shipstation-partnerapi-demo-accounts` |
+| `LOG_LEVEL` | `info` |
+| `SSM_PARAM_API_KEY` | `/shipstation-demo/partner-api-key` |
+| `SSM_PARAM_THEME_ID` | `/shipstation-demo/theme-id` |
+| `AWS_ACCESS_KEY_ID` | (your AWS key) |
+| `AWS_SECRET_ACCESS_KEY` | (your AWS secret) |
+| `S3_BUCKET_NAME` | (your S3 bucket) |
+| `CLOUDFRONT_DISTRIBUTION_ID` | (your CloudFront ID) |
+
+### 3. Deploy
+
+Push to `main` branch — GitHub Actions handles everything:
 ```bash
-cd backend
-npm install
-serverless deploy
-````
+git push origin main
+```
 
-_Note: Once deployment is successful, the terminal will output your API Gateway URL. Copy this URL for the frontend setup._
+Deploy locally:
+```bash
+# Backend
+cd backend && npm ci && serverless deploy
+
+# Frontend
+cd frontend && npm ci && npm run build
+aws s3 sync dist/ s3://YOUR_BUCKET --delete
+aws cloudfront create-invalidation --distribution-id YOUR_ID --paths "/*"
+```
 
 ---
 
-## 💻 Frontend Deployment
+## Architecture
 
-### 1. Environment Setup
-
-The frontend needs to know where your backend API lives.
-
-Navigate to the `frontend` directory and create a `.env.local` file:
-
-```bash
-cd frontend
-touch .env.local
+```
+Frontend (React/Vite → S3/CloudFront)
+    ↓
+API Gateway
+    ↓
+Lambda Functions
+    ↓
+DynamoDB (accounts, carriers, warehouses)
+    ↓
+ShipStation Partner API
 ```
 
-Open .env.local and add your unique API Gateway URL (provided by the Serverless deploy output in the previous step):
+**Key Files:**
+- `backend/handler.js` — 8 Lambda functions
+- `backend/serverless.yml` — Infrastructure as code
+- `backend/utils/validation.js` — Input validation
+- `frontend/src/services/api.js` — API client
 
-```env
-VITE_API_BASE_URL=https://YOUR_API_GATEWAY_ID.execute-api.us-west-2.amazonaws.com/dev
-```
-
-### 2. Build and Deploy to S3
-
-Compile the React code and sync it to the AWS S3 hosting bucket:
-
-```bash
-# Build the production files
-npm run build
-
-# Sync the dist folder to the S3 bucket
-aws s3 sync dist/ s3://YOUR_S3_BUCKET_NAME --delete
-```
-
-### 3. Invalidate CloudFront Cache
-
-To ensure users instantly see the latest deployment on the live domain, clear the CloudFront cache:
-
-```bash
-aws cloudfront create-invalidation --distribution-id YOUR_CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
-```
-
-### 4. Running Tests 🧪
-
-The frontend has a fully automated unit and UI component test suite powered by Vitest and React Testing Library. To run tests locally:
-
-````bash
-cd frontend
-# Run tests once
-npm run test
-
-# Run tests in watch mode (interactive)
-npm run test:watch
 ---
 
-## 📂 File Structure
+## Features
 
-```text
-/
-├── backend/                       ← Serverless API Framework
-│   ├── handler.js                 ← Lambda functions (Accounts, Direct Login, Carriers)
-│   └── serverless.yml             ← AWS infrastructure as code (DynamoDB, IAM, API Gateway)
-│
-└── frontend/                      ← React / Vite Application
-    ├── src/
-    │   ├── components/            ← Global components (DemoBar, CarrierTable)
-    │   ├── services/              ← API client logic (api.js)
-    │   └── shells/modern-wms/     ← Swappable "Mock" WMS Layouts (Layout.jsx, CarrierSettings.jsx)
-    ├── .env.local                 ← Local environment variables (API URL)
-    └── package.json
-````
+- ✅ One-click account provisioning with realistic demo data
+- ✅ Persistent session state (localStorage)
+- ✅ Dynamic carrier capability badges from ShipStation
+- ✅ Secure API key handling (Lambda-side only)
+- ✅ Environment-based configuration
+- ✅ Automated CI/CD pipeline
 
-## ✨ Core Features
+---
 
-- **One-Click Account Provisioning:** Automatically generates realistic demo companies and provisions real ShipStation API accounts with Locations (warehouses), Carriers and Ship Vias
-- **Persistent Sessions:** Utilizes `localStorage` to perfectly maintain the active demo state when returning from the ShipStation API portal.
-- **Carrier Capability Badges:** Dynamically parses ShipStation API data to show valid domestic, international, and return services.
-- **Secure Architecture:** Partner API keys are never exposed to the frontend; all ShipStation API calls route securely through AWS Lambda.
+## Testing
+
+```bash
+# Frontend unit tests
+cd frontend && npm run test
+
+# Backend validation
+cd backend && node test-validation.js
+```
+
+---
+
+## Documentation
+
+- **Code improvements:** See `IMPROVEMENTS_ROADMAP.md`
+- **Input validation:** `backend/utils/validation.js`
+- **Error handling:** `backend/handler.js` (lines 38-60)

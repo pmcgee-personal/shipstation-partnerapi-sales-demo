@@ -1,0 +1,75 @@
+name: Test & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-west-2
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Frontend: Lint
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Lint frontend
+        run: npm run lint
+        working-directory: frontend
+
+      - name: Test frontend
+        run: npm run test
+        working-directory: frontend
+
+      # Frontend: Build
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      # Backend: Install & prepare
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      # Deploy (only on push to main, not on PRs)
+      - name: Configure AWS credentials
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Deploy backend with Serverless
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: npx serverless deploy
+        working-directory: backend
+        env:
+          AWS_REGION: us-west-2
+
+      - name: Deploy frontend to S3
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+        working-directory: frontend
+
+      - name: Invalidate CloudFront cache
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"

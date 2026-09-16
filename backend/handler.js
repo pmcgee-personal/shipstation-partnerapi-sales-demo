@@ -14,6 +14,28 @@ const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 const ssmClient = new SSMClient({});
 
+// Environment configuration
+const TABLE_NAME = process.env.TABLE_NAME || 'shipstation-partnerapi-demo-accounts';
+const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+const SSM_PARAM_API_KEY = process.env.SSM_PARAM_API_KEY || '/shipstation-demo/partner-api-key';
+const SSM_PARAM_THEME_ID = process.env.SSM_PARAM_THEME_ID || '/shipstation-demo/theme-id';
+// Logging utility that respects LOG_LEVEL
+const logger = {
+  debug: (msg, data) => {
+    if (LOG_LEVEL === 'debug') {
+      console.log(`[DEBUG] ${msg}`, data || '');
+    }
+  },
+  info: (msg, data) => {
+    if (['debug', 'info'].includes(LOG_LEVEL)) {
+      console.log(`[INFO] ${msg}`, data || '');
+    }
+  },
+  error: (msg, data) => {
+    console.error(`[ERROR] ${msg}`, data || '');
+  },
+};
+
 // Error handling utilities
 const handleError = (error, context = "") => {
   console.error(`[ERROR] ${context}:`, {
@@ -136,7 +158,7 @@ const CORS_HEADERS = {
 
 async function getPartnerApiKey() {
   const ssmCommand = new GetParameterCommand({
-    Name: "/shipstation-demo/partner-api-key",
+    Name: SSM_PARAM_API_KEY,
     WithDecryption: true,
   });
   const ssmResponse = await ssmClient.send(ssmCommand);
@@ -249,7 +271,7 @@ module.exports.createAccount = async (event) => {
     }
 
     const params = {
-      TableName: "shipstation-partnerapi-demo-accounts",
+      TableName: TABLE_NAME,
       Item: {
         account_id: shipstation_account_id,
         label,
@@ -324,7 +346,7 @@ module.exports.createAccount = async (event) => {
 
 module.exports.listAccounts = async (event) => {
   try {
-    const params = { TableName: "shipstation-partnerapi-demo-accounts" };
+    const params = { TableName: TABLE_NAME };
     const data = await docClient.send(new ScanCommand(params));
     return successResponse({ accounts: data.Items || [] });
   } catch (error) {
@@ -347,7 +369,7 @@ module.exports.getAccount = async (event) => {
     const { accountId } = accountValidation.validated;
     const data = await docClient.send(
       new GetCommand({
-        TableName: "shipstation-partnerapi-demo-accounts",
+        TableName: TABLE_NAME,
         Key: { account_id: accountId },
       }),
     );
@@ -403,7 +425,7 @@ module.exports.addShipVia = async (event) => {
 
     const { Item } = await docClient.send(
       new GetCommand({
-        TableName: "shipstation-partnerapi-demo-accounts",
+        TableName: TABLE_NAME,
         Key: { account_id: accountId },
       }),
     );
@@ -436,7 +458,7 @@ module.exports.addShipVia = async (event) => {
 
     await docClient.send(
       new UpdateCommand({
-        TableName: "shipstation-partnerapi-demo-accounts",
+        TableName: TABLE_NAME,
         Key: { account_id: accountId },
         UpdateExpression: "SET shipVias = :sv",
         ExpressionAttributeValues: { ":sv": newShipVias },
@@ -479,7 +501,7 @@ module.exports.deleteShipVia = async (event) => {
 
     const { Item } = await docClient.send(
       new GetCommand({
-        TableName: "shipstation-partnerapi-demo-accounts",
+        TableName: TABLE_NAME,
         Key: { account_id: accountId },
       }),
     );
@@ -496,7 +518,7 @@ module.exports.deleteShipVia = async (event) => {
 
     await docClient.send(
       new UpdateCommand({
-        TableName: "shipstation-partnerapi-demo-accounts",
+        TableName: TABLE_NAME,
         Key: { account_id: accountId },
         UpdateExpression: "SET shipVias = :sv",
         ExpressionAttributeValues: { ":sv": newShipVias },
@@ -550,7 +572,7 @@ module.exports.directLogin = async (event) => {
     const themeIdResponse = await ssmClient
       .send(
         new GetParameterCommand({
-          Name: "/shipstation-demo/theme-id",
+          Name: SSM_PARAM_THEME_ID,
           WithDecryption: false,
         }),
       )

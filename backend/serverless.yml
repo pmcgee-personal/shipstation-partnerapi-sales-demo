@@ -5,7 +5,11 @@ provider:
   runtime: nodejs20.x
   region: us-west-2
   stage: dev
-
+  environment:
+    TABLE_NAME: ${env:TABLE_NAME, 'shipstation-partnerapi-demo-accounts'}
+    LOG_LEVEL: ${env:LOG_LEVEL, 'info'}
+    SSM_PARAM_API_KEY: ${env:SSM_PARAM_API_KEY, '/shipstation-demo/partner-api-key'}
+    SSM_PARAM_THEME_ID: ${env:SSM_PARAM_THEME_ID, '/shipstation-demo/theme-id'}
   # For backwards-compatibility with Serverless v2, we declare permissions here:
   iamRoleStatements:
     - Effect: Allow

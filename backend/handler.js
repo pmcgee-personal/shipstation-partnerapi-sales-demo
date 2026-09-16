@@ -741,3 +741,4 @@ module.exports.createWarehouse = async (event) => {
   }
 };
 // Backend deployment test - checking AWS credentials
+// Trigger redeploy with API secret

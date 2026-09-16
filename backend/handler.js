@@ -12,6 +12,35 @@ const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 const ssmClient = new SSMClient({});
 
+// Error handling utilities
+const handleError = (error, context = "") => {
+  console.error(`[ERROR] ${context}:`, {
+    message: error.message,
+    code: error.code,
+    stack: error.stack,
+  });
+
+  // Specific error responses
+  if (error.code === "ResourceNotFoundException") {
+    return { statusCode: 404, body: JSON.stringify({ error: "Resource not found" }) };
+  }
+  if (error.code === "ValidationException") {
+    return { statusCode: 400, body: JSON.stringify({ error: "Invalid request" }) };
+  }
+  if (error.code === "ConditionalCheckFailedException") {
+    return { statusCode: 409, body: JSON.stringify({ error: "Conflict: resource already exists" }) };
+  }
+  
+  // Generic server error
+  return { statusCode: 500, body: JSON.stringify({ error: "Internal server error" }) };
+};
+
+const successResponse = (data) => ({
+  statusCode: 200,
+  headers: CORS_HEADERS,
+  body: JSON.stringify(data),
+});
+
 const WAREHOUSE_LOCATIONS = [
   {
     name: "Worldwide Express",
@@ -297,20 +326,10 @@ module.exports.listAccounts = async (event) => {
   try {
     const params = { TableName: "shipstation-partnerapi-demo-accounts" };
     const data = await docClient.send(new ScanCommand(params));
-    return {
-      statusCode: 200,
-      headers: CORS_HEADERS,
-      body: JSON.stringify({ accounts: data.Items || [] }),
-    };
+    return successResponse({ accounts: data.Items || [] });
   } catch (error) {
-    console.error("Error listing accounts:", error);
-    return {
-      statusCode: 500,
-      headers: CORS_HEADERS,
-      body: JSON.stringify({
-        error: "Could not retrieve accounts from DynamoDB",
-      }),
-    };
+    const response = handleError(error, "listAccounts");
+    return { ...response, headers: CORS_HEADERS };
   }
 };
 

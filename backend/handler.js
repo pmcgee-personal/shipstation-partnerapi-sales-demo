@@ -740,3 +740,4 @@ module.exports.createWarehouse = async (event) => {
     };
   }
 };
+// Backend deployment test - checking AWS credentials

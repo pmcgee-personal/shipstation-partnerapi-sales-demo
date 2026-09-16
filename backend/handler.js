@@ -6,6 +6,8 @@ const {
   GetCommand,
   UpdateCommand,
 } = require("@aws-sdk/lib-dynamodb");
+const validation = require("./utils/validation");
+
 const { SSMClient, GetParameterCommand } = require("@aws-sdk/client-ssm");
 
 const client = new DynamoDBClient({});
@@ -164,19 +166,17 @@ module.exports.createAccount = async (event) => {
       }
     }
 
-    const { label, email } = bodyData;
-
-    // Echo the exact payload back to the frontend error log
-    if (!label || !email) {
+    // Validate inputs using utility
+    const createAccountValidation = validation.validateCreateAccountInput(bodyData);
+    if (!createAccountValidation.isValid) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({
-          error: `label and email are required. Backend received this payload: ${JSON.stringify(bodyData)}`,
-        }),
+        body: JSON.stringify({ error: createAccountValidation.error }),
       };
     }
 
+    const { label, email } = createAccountValidation.validated;
     partnerApiKey = await getPartnerApiKey();
 
     const ssResponse = await fetch(
@@ -335,13 +335,16 @@ module.exports.listAccounts = async (event) => {
 
 module.exports.getAccount = async (event) => {
   try {
-    const { accountId } = event.pathParameters;
-    if (!accountId)
+    // Validate accountId from path
+    const accountValidation = validation.validateAccountIdPath(event.pathParameters?.accountId);
+    if (!accountValidation.isValid) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "accountId is required" }),
+        body: JSON.stringify({ error: accountValidation.error }),
       };
+    }
+    const { accountId } = accountValidation.validated;
     const data = await docClient.send(
       new GetCommand({
         TableName: "shipstation-partnerapi-demo-accounts",
@@ -371,26 +374,32 @@ module.exports.getAccount = async (event) => {
 
 module.exports.addShipVia = async (event) => {
   try {
-    const { accountId } = event.pathParameters;
-    const body = JSON.parse(event.body || "{}");
-    const { ship_via_code, carrier_id, service_code, package_type } = body;
+    // Validate inputs
+    let bodyData = {};
+    if (event.body) {
+      if (typeof event.body === "string") {
+        bodyData = event.isBase64Encoded
+          ? JSON.parse(Buffer.from(event.body, "base64").toString("utf-8"))
+          : JSON.parse(event.body);
+      } else {
+        bodyData = event.body;
+      }
+    }
 
-    if (
-      !accountId ||
-      !ship_via_code ||
-      !carrier_id ||
-      !service_code ||
-      !package_type
-    ) {
+    const shipViaValidation = validation.validateAddShipViaInput(
+      event.pathParameters?.accountId,
+      bodyData
+    );
+    if (!shipViaValidation.isValid) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({
-          error:
-            "Missing required fields: ship_via_code, carrier_id, service_code, and package_type are all required.",
-        }),
+        body: JSON.stringify({ error: shipViaValidation.error }),
       };
     }
+
+    const { accountId, ship_via_code, carrier_id, service_code, package_type } =
+      shipViaValidation.validated;
 
     const { Item } = await docClient.send(
       new GetCommand({
@@ -453,15 +462,20 @@ module.exports.addShipVia = async (event) => {
 
 module.exports.deleteShipVia = async (event) => {
   try {
-    const { accountId, shipViaCode } = event.pathParameters;
-    if (!accountId || !shipViaCode)
+    // Validate path parameters
+    const deleteValidation = validation.validateDeleteShipViaInput(
+      event.pathParameters?.accountId,
+      event.pathParameters?.shipViaCode
+    );
+    if (!deleteValidation.isValid) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({
-          error: "accountId and shipViaCode are required in the path.",
-        }),
+        body: JSON.stringify({ error: deleteValidation.error }),
       };
+    }
+
+    const { accountId, shipViaCode } = deleteValidation.validated;
 
     const { Item } = await docClient.send(
       new GetCommand({
@@ -509,15 +523,28 @@ module.exports.deleteShipVia = async (event) => {
 module.exports.directLogin = async (event) => {
   try {
     const body = JSON.parse(event.body || "{}");
-    const { accountId } = body;
+    // Parse and validate body
+    let bodyData = {};
+    if (event.body) {
+      if (typeof event.body === "string") {
+        bodyData = event.isBase64Encoded
+          ? JSON.parse(Buffer.from(event.body, "base64").toString("utf-8"))
+          : JSON.parse(event.body);
+      } else {
+        bodyData = event.body;
+      }
+    }
 
-    if (!accountId) {
+    const loginValidation = validation.validateDirectLoginInput(bodyData);
+    if (!loginValidation.isValid) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "accountId is required" }),
+        body: JSON.stringify({ error: loginValidation.error }),
       };
     }
+
+    const { accountId } = loginValidation.validated;
 
     const partnerApiKey = await getPartnerApiKey();
     const themeIdResponse = await ssmClient
@@ -583,14 +610,17 @@ module.exports.directLogin = async (event) => {
 
 module.exports.listCarriers = async (event) => {
   try {
-    const accountId = event.pathParameters?.accountId;
-    if (!accountId) {
+    // Validate accountId from path
+    const carrierValidation = validation.validateAccountIdPath(event.pathParameters?.accountId);
+    if (!carrierValidation.isValid) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "accountId is required in the path" }),
+        body: JSON.stringify({ error: carrierValidation.error }),
       };
     }
+
+    const { accountId } = carrierValidation.validated;
     const partnerApiKey = await getPartnerApiKey();
     const carriersResponse = await fetch(
       "https://api.shipengine.com/v1/carriers",
@@ -636,14 +666,17 @@ module.exports.listCarriers = async (event) => {
 
 module.exports.listWarehouses = async (event) => {
   try {
-    const accountId = event.pathParameters?.accountId;
-    if (!accountId) {
+    // Validate accountId from path
+    const warehouseValidation = validation.validateAccountIdPath(event.pathParameters?.accountId);
+    if (!warehouseValidation.isValid) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "accountId is required in the path" }),
+        body: JSON.stringify({ error: warehouseValidation.error }),
       };
     }
+
+    const { accountId } = warehouseValidation.validated;
     const partnerApiKey = await getPartnerApiKey();
     const whResponse = await fetch("https://api.shipengine.com/v1/warehouses", {
       method: "GET",
@@ -685,14 +718,17 @@ module.exports.listWarehouses = async (event) => {
 
 module.exports.createWarehouse = async (event) => {
   try {
-    const accountId = event.pathParameters?.accountId;
-    if (!accountId) {
+    // Validate accountId from path
+    const createWhValidation = validation.validateAccountIdPath(event.pathParameters?.accountId);
+    if (!createWhValidation.isValid) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "accountId is required in the path" }),
+        body: JSON.stringify({ error: createWhValidation.error }),
       };
     }
+
+    const { accountId } = createWhValidation.validated;
     const partnerApiKey = await getPartnerApiKey();
     const randomLoc =
       WAREHOUSE_LOCATIONS[

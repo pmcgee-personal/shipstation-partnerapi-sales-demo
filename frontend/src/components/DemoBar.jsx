@@ -11,6 +11,8 @@ import {
 import { api } from "../services/api";
 
 // 1. Import our newly extracted and tested utility function!
+import { validateCreateAccount } from "../utils/inputValidation";
+
 import { generateDemoDetails } from "../utils/demoUtils";
 
 // 2. The inline generator definition has been completely removed.
@@ -50,8 +52,16 @@ function DemoBar({ activeAccountId, setActiveAccountId }) {
     setIsCreating(true);
     setError(null);
     try {
-      // 3. We call the imported function exactly the same way
       const { label, email } = generateDemoDetails();
+
+      // Validate inputs before API call
+      const validation = validateCreateAccount(label, email);
+      if (!validation.isValid) {
+        setError(validation.error);
+        setIsCreating(false);
+        return;
+      }
+
       const newAccount = await api.createAccount(label, email);
 
       await loadAccounts();

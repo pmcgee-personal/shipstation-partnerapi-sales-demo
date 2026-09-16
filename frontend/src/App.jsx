@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import DemoBar from "./components/DemoBar";
 
 // In Phase 1, we hardcode the Modern WMS shell.

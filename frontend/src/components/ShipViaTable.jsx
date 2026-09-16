@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import PropTypes from "prop-types";
 import {
   Plus,
   Trash2,
@@ -8,13 +9,20 @@ import {
 } from "lucide-react";
 import { themeConfig } from "../shells/modern-wms/themeConfig";
 
-export default function ShipViaTable({
+function ShipViaTable({
   shipVias = [],
   carriers = [],
   onAddShipVia,
   onDeleteShipVia,
   isSyncing,
 }) {
+  ShipViaTable.propTypes = {
+    shipVias: PropTypes.array,
+    carriers: PropTypes.array,
+    onAddShipVia: PropTypes.func,
+    onDeleteShipVia: PropTypes.func,
+    isSyncing: PropTypes.bool,
+  };
   const [isAdding, setIsAdding] = useState(false);
   const [newCode, setNewCode] = useState("");
   const [selectedCarrierId, setSelectedCarrierId] = useState("");
@@ -281,7 +289,7 @@ export default function ShipViaTable({
                 const isExpanded = expandedRows.includes(sv.ship_via_code);
 
                 return (
-                  <React.Fragment key={sv.ship_via_code}>
+                  <>
                     {/* Main Row */}
                     <tr
                       className="hover:bg-gray-50 transition-colors cursor-pointer"
@@ -356,7 +364,7 @@ export default function ShipViaTable({
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
+                  </>
                 );
               })
             )}
@@ -366,3 +374,5 @@ export default function ShipViaTable({
     </div>
   );
 }
+
+export default ShipViaTable;

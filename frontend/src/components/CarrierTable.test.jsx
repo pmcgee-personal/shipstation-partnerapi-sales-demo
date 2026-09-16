@@ -1,5 +1,4 @@
 // src/components/CarrierTable.test.jsx
-import React from "react";
 import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import CarrierTable from "./CarrierTable";

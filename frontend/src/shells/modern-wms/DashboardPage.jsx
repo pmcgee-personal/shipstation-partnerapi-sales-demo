@@ -1,5 +1,4 @@
 // frontend/src/DashboardPage.jsx
-import React from "react";
 import {
   Inbox,
   CheckSquare,

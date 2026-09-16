@@ -1,6 +1,7 @@
 // frontend/src/shells/modern-wms/CarrierSettings.jsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { api } from "../../services/api";
 import { themeConfig } from "./themeConfig";
 import { Zap, Info, RefreshCw, Plus, Loader2 } from "lucide-react"; // <-- Added Plus and Loader2
@@ -10,7 +11,10 @@ import LocationTable from "../../components/LocationTable"; // <-- Added Locatio
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // <-- Added API base URL
 
-export default function CarrierSettings({ activeAccountId }) {
+function CarrierSettings({ activeAccountId }) {
+  CarrierSettings.propTypes = {
+    activeAccountId: PropTypes.string,
+  };
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [carriers, setCarriers] = useState([]);
@@ -22,7 +26,6 @@ export default function CarrierSettings({ activeAccountId }) {
   const [isLoadingWarehouses, setIsLoadingWarehouses] = useState(false);
   const [isAddingWarehouse, setIsAddingWarehouse] = useState(false);
 
-  // Automatically fetch carriers, configs, and warehouses on selection change
   useEffect(() => {
     if (activeAccountId) {
       loadCarrierSettings();
@@ -156,11 +159,11 @@ export default function CarrierSettings({ activeAccountId }) {
     <div
       className={`${themeConfig.colors.cardBg} p-6 rounded-lg shadow-sm border border-gray-100`}
     >
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-bold text-gray-800">Carrier Settings</h2>
           <p className="text-gray-500 mt-1">
-            Click "Connect Carriers" to manage your carrier accounts.
+            Click &quot;Connect Carriers&quot; to manage your carrier accounts.
           </p>
         </div>
         <div className="flex space-x-3">
@@ -258,3 +261,6 @@ export default function CarrierSettings({ activeAccountId }) {
     </div>
   );
 }
+
+
+export default CarrierSettings;

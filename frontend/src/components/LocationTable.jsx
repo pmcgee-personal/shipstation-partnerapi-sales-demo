@@ -1,8 +1,11 @@
-// frontend/src/components/LocationTable.jsx
-import React from "react";
 import { Loader2 } from "lucide-react";
+import PropTypes from "prop-types";
 
-export default function LocationTable({ warehouses, isLoading }) {
+function LocationTable({ warehouses, isLoading }) {
+  LocationTable.propTypes = {
+    warehouses: PropTypes.arrayOf(PropTypes.object),
+    isLoading: PropTypes.bool,
+  };
   if (isLoading) {
     return (
       <div className="mt-6 border border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
@@ -88,3 +91,5 @@ export default function LocationTable({ warehouses, isLoading }) {
     </div>
   );
 }
+
+export default LocationTable;

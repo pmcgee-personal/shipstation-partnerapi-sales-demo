@@ -46,7 +46,7 @@ describe('OTP Login Gate', () => {
     cy.wait('@requestCode');
 
     cy.contains('Enter the code sent to demo@shipstation.com').should('be.visible');
-    cy.get('input[inputmode="numeric"]').type('123456');
+    cy.get('input[inputmode="numeric"]').type('12345678');
     cy.contains('button', 'Verify code').click();
     cy.wait('@verifyCode');
 
@@ -68,7 +68,7 @@ describe('OTP Login Gate', () => {
     cy.contains('button', 'Send code').click();
     cy.wait('@requestCode');
 
-    cy.get('input[inputmode="numeric"]').type('000000');
+    cy.get('input[inputmode="numeric"]').type('00000000');
     cy.contains('button', 'Verify code').click();
     cy.wait('@verifyCode');
 

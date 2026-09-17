@@ -112,7 +112,7 @@ function LoginGate({ onAuthenticated }) {
               maxLength={8}
               value={code}
               onChange={(event) => setCode(event.target.value)}
-              placeholder="6-digit code"
+              placeholder="Verification code"
               className="w-full text-center tracking-widest text-lg px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
             />
             <button

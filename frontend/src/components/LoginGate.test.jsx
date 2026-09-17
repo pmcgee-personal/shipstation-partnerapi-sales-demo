@@ -34,7 +34,7 @@ describe("LoginGate Component", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send code" }));
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText("6-digit code")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Verification code")).toBeInTheDocument();
     });
     expect(api.requestOtp).toHaveBeenCalledWith("demo@shipstation.com");
   });
@@ -71,15 +71,15 @@ describe("LoginGate Component", () => {
       target: { value: "demo@shipstation.com" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send code" }));
-    await waitFor(() => screen.getByPlaceholderText("6-digit code"));
+    await waitFor(() => screen.getByPlaceholderText("Verification code"));
 
-    fireEvent.change(screen.getByPlaceholderText("6-digit code"), {
-      target: { value: "123456" },
+    fireEvent.change(screen.getByPlaceholderText("Verification code"), {
+      target: { value: "12345678" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Verify code" }));
 
     await waitFor(() => expect(onAuthenticated).toHaveBeenCalledTimes(1));
-    expect(api.verifyOtp).toHaveBeenCalledWith("demo@shipstation.com", "123456", "session-token");
+    expect(api.verifyOtp).toHaveBeenCalledWith("demo@shipstation.com", "12345678", "session-token");
     expect(getSession()?.idToken).toBe("id-token");
   });
 
@@ -92,17 +92,17 @@ describe("LoginGate Component", () => {
       target: { value: "demo@shipstation.com" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send code" }));
-    await waitFor(() => screen.getByPlaceholderText("6-digit code"));
+    await waitFor(() => screen.getByPlaceholderText("Verification code"));
 
-    fireEvent.change(screen.getByPlaceholderText("6-digit code"), {
-      target: { value: "000000" },
+    fireEvent.change(screen.getByPlaceholderText("Verification code"), {
+      target: { value: "00000000" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Verify code" }));
 
     await waitFor(() => {
       expect(screen.getByText("Incorrect code. Please try again.")).toBeInTheDocument();
     });
-    expect(screen.getByPlaceholderText("6-digit code")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Verification code")).toBeInTheDocument();
   });
 
   it("returns to the email step when 'Use a different email' is clicked", async () => {
@@ -113,7 +113,7 @@ describe("LoginGate Component", () => {
       target: { value: "demo@shipstation.com" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send code" }));
-    await waitFor(() => screen.getByPlaceholderText("6-digit code"));
+    await waitFor(() => screen.getByPlaceholderText("Verification code"));
 
     fireEvent.click(screen.getByRole("button", { name: /Use a different email/ }));
 

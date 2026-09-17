@@ -94,4 +94,18 @@ export const api = {
     }
     return response.json();
   },
+
+  listWarehouses: async (accountId) => {
+    try {
+      const response = await retryFetch(`${API_BASE_URL}/api/warehouses/${accountId}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+      const data = await response.json();
+      return data.warehouses || [];
+    } catch (error) {
+      handleApiError(error, "listWarehouses");
+    }
+  },
 };

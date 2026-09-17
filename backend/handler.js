@@ -645,6 +645,21 @@ module.exports.createWarehouse = async (event) => {
   }
 };
 
+// Cognito CustomMessage trigger: branded content for the passwordless
+// EMAIL_OTP sign-in code. This is the only mechanism that actually
+// customizes this email — the UserPool-level EmailAuthenticationMessage/
+// Subject properties don't apply to USER_AUTH/EMAIL_OTP delivery.
+module.exports.customMessage = async (event) => {
+  if (event.triggerSource === "CustomMessage_Authentication") {
+    const code = event.request.codeParameter;
+    event.response.emailSubject = "Your ShipStation Partner API Sales Demo sign-in code";
+    event.response.emailMessage =
+      `Your ShipStation Partner API Sales Demo verification code is <strong>${code}</strong>. ` +
+      "Enter it on the sign-in page to continue. If you didn't request this, you can safely ignore this email.";
+  }
+  return event;
+};
+
 module.exports.requestOtp = async (event, context) => {
   const requestId = getRequestId(context);
   try {

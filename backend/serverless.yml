@@ -85,4 +85,69 @@ functions:
           method: post
           cors: true
 
+# CloudWatch Alarms for monitoring
+resources:
+  Resources:
+    # Alarm: Lambda Errors
+    LambdaErrorsAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-lambda-errors
+        AlarmDescription: Alert when Lambda functions have errors
+        MetricName: Errors
+        Namespace: AWS/Lambda
+        Statistic: Sum
+        Period: 60
+        EvaluationPeriods: 1
+        Threshold: 5
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Dimensions:
+          - Name: FunctionName
+            Value:
+              Ref: LambdaRole
+        TreatMissingData: notBreaching
 
+    # Alarm: Lambda Throttling
+    LambdaThrottlesAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-lambda-throttles
+        AlarmDescription: Alert when Lambda functions are throttled
+        MetricName: Throttles
+        Namespace: AWS/Lambda
+        Statistic: Sum
+        Period: 60
+        EvaluationPeriods: 1
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching
+
+    # Alarm: Lambda Duration (slow requests)
+    LambdaDurationAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-lambda-high-duration
+        AlarmDescription: Alert when Lambda functions take too long
+        MetricName: Duration
+        Namespace: AWS/Lambda
+        Statistic: Average
+        Period: 300
+        EvaluationPeriods: 2
+        Threshold: 5000  # 5 seconds
+        ComparisonOperator: GreaterThanThreshold
+        TreatMissingData: notBreaching
+
+    # Alarm: API Gateway 5xx Errors
+    APIGateway5xxAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-apigw-5xx
+        AlarmDescription: Alert on API Gateway 5xx errors
+        MetricName: 5XXError
+        Namespace: AWS/ApiGateway
+        Statistic: Sum
+        Period: 60
+        EvaluationPeriods: 1
+        Threshold: 10
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching

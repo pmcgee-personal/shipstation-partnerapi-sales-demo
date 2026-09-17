@@ -35,14 +35,12 @@ function CarrierSettings({ activeAccountId }) {
     setIsSyncing(true);
     setError(null);
     try {
+      // Load active account details
+      await api.getAccount(activeAccountId);
+
       // Load connected carrier configurations
       const carriersData = await api.listCarriers(activeAccountId);
       setCarriers(carriersData);
-    } catch (err) {
-      console.error("Failed to load carrier settings floor data:", err);
-      setError("Failed to sync configurations from active account.");
-    } finally {
-      setIsSyncing(false);
     }
   };
 

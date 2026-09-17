@@ -19,21 +19,26 @@ const TABLE_NAME = process.env.TABLE_NAME || 'shipstation-partnerapi-demo-accoun
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
 const SSM_PARAM_API_KEY = process.env.SSM_PARAM_API_KEY || '/shipstation-demo/partner-api-key';
 const SSM_PARAM_THEME_ID = process.env.SSM_PARAM_THEME_ID || '/shipstation-demo/theme-id';
-// Logging utility that respects LOG_LEVEL
+// Logging utility that respects LOG_LEVEL and includes request tracking
 const logger = {
-  debug: (msg, data) => {
+  debug: (msg, data, requestId) => {
     if (LOG_LEVEL === 'debug') {
-      console.log(`[DEBUG] ${msg}`, data || '');
+      console.log(`[DEBUG] ${requestId ? `[${requestId}] ` : ''}${msg}`, data || '');
     }
   },
-  info: (msg, data) => {
+  info: (msg, data, requestId) => {
     if (['debug', 'info'].includes(LOG_LEVEL)) {
-      console.log(`[INFO] ${msg}`, data || '');
+      console.log(`[INFO] ${requestId ? `[${requestId}] ` : ''}${msg}`, data || '');
     }
   },
-  error: (msg, data) => {
-    console.error(`[ERROR] ${msg}`, data || '');
+  error: (msg, data, requestId) => {
+    console.error(`[ERROR] ${requestId ? `[${requestId}] ` : ''}${msg}`, data || '');
   },
+};
+
+// Helper to get/generate request ID from Lambda context
+const getRequestId = (context) => {
+  return context?.requestId || context?.awsRequestId || 'no-request-id';
 };
 
 // Error handling utilities
@@ -359,7 +364,9 @@ module.exports.getAccount = async (event) => {
 
 ;
 
-module.exports.directLogin = async (event) => {
+module.exports.directLogin = async (event, context) => {
+  const requestId = getRequestId(context);
+  logger.info('DIRECT_LOGIN_START', { path: event.path }, requestId);
   try {
     const body = JSON.parse(event.body || "{}");
     // Parse and validate body
@@ -427,6 +434,8 @@ module.exports.directLogin = async (event) => {
       finalRedirectUrl += `&theme_id=${themeId}`;
     }
 
+
+    logger.info('DIRECT_LOGIN_SUCCESS', { statusCode: 200 }, requestId);
     return {
       statusCode: 200,
       headers: CORS_HEADERS,
@@ -436,7 +445,7 @@ module.exports.directLogin = async (event) => {
       }),
     };
   } catch (error) {
-    console.error("Error during direct login generation:", error);
+    logger.error("DIRECT_LOGIN_ERROR", { message: error.message }, requestId);
     return {
       statusCode: 500,
       headers: CORS_HEADERS,

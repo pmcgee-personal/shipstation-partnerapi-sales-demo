@@ -86,4 +86,12 @@ export const api = {
     const data = await response.json();
     return data.carriers || [];
   },
+
+  getAccount: async (accountId) => {
+    const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch account details");
+    }
+    return response.json();
+  },
 };

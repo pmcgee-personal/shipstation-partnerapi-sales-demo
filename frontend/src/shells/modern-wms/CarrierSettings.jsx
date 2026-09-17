@@ -1,33 +1,35 @@
-// frontend/src/shells/modern-wms/CarrierSettings.jsx
-
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import { Info } from "lucide-react";
 import { api } from "../../services/api";
 import { themeConfig } from "./themeConfig";
-import { Zap, Info, RefreshCw, Plus, Loader2 } from "lucide-react"; // <-- Added Plus and Loader2
-import CarrierTable from "../../components/CarrierTable";
-import LocationTable from "../../components/LocationTable"; // <-- Added LocationTable
+import CarrierTableSection from "./CarrierTableSection";
+import WarehouseLocationsSection from "./WarehouseLocationsSection";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // <-- Added API base URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function CarrierSettings({ activeAccountId }) {
   CarrierSettings.propTypes = {
     activeAccountId: PropTypes.string,
   };
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [carriers, setCarriers] = useState([]);
-  const [error, setError] = useState(null);
 
-  // --- NEW: Warehouse States ---
+  // Carrier states
+  const [carriers, setCarriers] = useState([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  // Warehouse states
   const [warehouses, setWarehouses] = useState([]);
   const [isLoadingWarehouses, setIsLoadingWarehouses] = useState(false);
   const [isAddingWarehouse, setIsAddingWarehouse] = useState(false);
 
+  // Common
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     if (activeAccountId) {
       loadCarrierSettings();
-      fetchWarehouses(); // <-- Call our new warehouse fetcher
+      fetchWarehouses();
     }
   }, [activeAccountId]);
 
@@ -35,16 +37,17 @@ function CarrierSettings({ activeAccountId }) {
     setIsSyncing(true);
     setError(null);
     try {
-      // Load active account details
       await api.getAccount(activeAccountId);
-
-      // Load connected carrier configurations
       const carriersData = await api.listCarriers(activeAccountId);
       setCarriers(carriersData);
+    } catch (err) {
+      console.error("Failed to load carrier settings:", err);
+      setError("Failed to sync configurations from active account.");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
-  // --- NEW: Warehouse Fetch Logic (migrated from LocationsPage) ---
   const fetchWarehouses = async () => {
     if (!activeAccountId) return;
     setIsLoadingWarehouses(true);
@@ -78,7 +81,7 @@ function CarrierSettings({ activeAccountId }) {
       );
       if (!response.ok)
         throw new Error("Failed to create new warehouse on ShipStation API.");
-      await fetchWarehouses(); // Refresh list on success
+      await fetchWarehouses();
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -102,6 +105,11 @@ function CarrierSettings({ activeAccountId }) {
     }
   };
 
+  const handleRefresh = () => {
+    loadCarrierSettings();
+    fetchWarehouses();
+  };
+
   if (!activeAccountId) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 flex items-center space-x-4">
@@ -121,99 +129,28 @@ function CarrierSettings({ activeAccountId }) {
     <div
       className={`${themeConfig.colors.cardBg} p-6 rounded-lg shadow-sm border border-gray-100`}
     >
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-gray-800">Carrier Settings</h2>
-          <p className="text-gray-500 mt-1">
-            Click &quot;Connect Carriers&quot; to manage your carrier accounts.
-          </p>
-        </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={() => {
-              loadCarrierSettings();
-              fetchWarehouses();
-            }}
-            disabled={isSyncing || isLoadingWarehouses || isRedirecting}
-            className={`inline-flex items-center justify-center px-3 py-2.5 rounded-md font-medium text-sm transition-colors border border-gray-200 text-gray-600 hover:bg-gray-50 ${
-              isSyncing || isLoadingWarehouses
-                ? "opacity-50 cursor-not-allowed"
-                : ""
-            }`}
-            title="Sync carrier data"
-          >
-            <RefreshCw
-              size={16}
-              className={isSyncing || isLoadingWarehouses ? "animate-spin" : ""}
-            />
-          </button>
-          <button
-            onClick={handleConnectClick}
-            disabled={isRedirecting || isSyncing}
-            className={`inline-flex items-center justify-center px-5 py-2.5 rounded-md font-semibold text-sm transition-colors ${
-              themeConfig.colors.primaryButtonBg
-            } ${themeConfig.colors.primaryButtonText} ${
-              themeConfig.colors.primaryButtonHover
-            } ${isRedirecting || isSyncing ? "opacity-50 cursor-not-allowed" : ""}`}
-          >
-            {isRedirecting ? (
-              "Generating Link..."
-            ) : (
-              <>
-                <Zap size={16} className="mr-2" />
-                Connect Carriers
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
       {error && (
-        <div className="mt-4 bg-red-50 text-red-700 p-3 rounded-md border border-red-200 text-sm">
+        <div className="mb-6 bg-red-50 text-red-700 p-3 rounded-md border border-red-200 text-sm">
           <strong>Error:</strong> {error}
         </div>
       )}
 
-      {/* Main Carrier Connection List */}
-      <CarrierTable carriers={carriers} isLoading={isSyncing} />
+      <CarrierTableSection
+        carriers={carriers}
+        isSyncing={isSyncing}
+        isRedirecting={isRedirecting}
+        onRefresh={handleRefresh}
+        onConnect={handleConnectClick}
+      />
 
-      {/* NEW: Warehouse Locations Section */}
-      <div className="mt-12 pt-8 border-t border-gray-200">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">
-              Warehouse Locations
-            </h2>
-            <p className="text-gray-500 mt-1">
-              Manage physical origin locations for this account.
-            </p>
-          </div>
-          <button
-            onClick={handleAddLocation}
-            disabled={isAddingWarehouse || isLoadingWarehouses}
-            className={`inline-flex shrink-0 items-center justify-center px-5 py-2.5 rounded-md font-semibold text-sm transition-colors ${themeConfig.colors.primaryButtonBg} ${themeConfig.colors.primaryButtonText} ${themeConfig.colors.primaryButtonHover} disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {isAddingWarehouse ? (
-              <>
-                <Loader2 size={16} className="animate-spin mr-2" />
-                Adding...
-              </>
-            ) : (
-              <>
-                <Plus size={16} className="mr-2" />
-                Add Location
-              </>
-            )}
-          </button>
-        </div>
-        <LocationTable
-          warehouses={warehouses}
-          isLoading={isLoadingWarehouses}
-        />
-      </div>
+      <WarehouseLocationsSection
+        warehouses={warehouses}
+        isLoading={isLoadingWarehouses}
+        isAdding={isAddingWarehouse}
+        onAddLocation={handleAddLocation}
+      />
     </div>
   );
 }
-
 
 export default CarrierSettings;

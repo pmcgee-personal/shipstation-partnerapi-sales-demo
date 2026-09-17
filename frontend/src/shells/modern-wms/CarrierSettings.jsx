@@ -6,7 +6,6 @@ import { api } from "../../services/api";
 import { themeConfig } from "./themeConfig";
 import { Zap, Info, RefreshCw, Plus, Loader2 } from "lucide-react"; // <-- Added Plus and Loader2
 import CarrierTable from "../../components/CarrierTable";
-import ShipViaTable from "../../components/ShipViaTable";
 import LocationTable from "../../components/LocationTable"; // <-- Added LocationTable
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // <-- Added API base URL
@@ -18,7 +17,6 @@ function CarrierSettings({ activeAccountId }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [carriers, setCarriers] = useState([]);
-  const [shipVias, setShipVias] = useState([]);
   const [error, setError] = useState(null);
 
   // --- NEW: Warehouse States ---
@@ -37,11 +35,7 @@ function CarrierSettings({ activeAccountId }) {
     setIsSyncing(true);
     setError(null);
     try {
-      // 1. Load active account details
-      const accountData = await api.getAccount(activeAccountId);
-      setShipVias(accountData.shipVias || []);
-
-      // 2. Load connected carrier configurations
+      // Load connected carrier configurations
       const carriersData = await api.listCarriers(activeAccountId);
       setCarriers(carriersData);
     } catch (err) {
@@ -107,36 +101,6 @@ function CarrierSettings({ activeAccountId }) {
       console.error("Direct Login Failed:", err);
       setError(err.message || "Failed to generate connection link.");
       setIsRedirecting(false);
-    }
-  };
-
-  const handleAddShipVia = async (shipViaData) => {
-    try {
-      const updatedAccount = await api.addShipVia(activeAccountId, shipViaData);
-      setShipVias(updatedAccount.shipVias || []);
-    } catch (err) {
-      console.error("Add Ship Via Failed:", err);
-      throw new Error(err.message || "Failed to add mapping.");
-    }
-  };
-
-  const handleDeleteShipVia = async (shipViaCode) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete the mapping for "${shipViaCode}"?`,
-      )
-    ) {
-      return;
-    }
-    try {
-      const updatedAccount = await api.deleteShipVia(
-        activeAccountId,
-        shipViaCode,
-      );
-      setShipVias(updatedAccount.shipVias || []);
-    } catch (err) {
-      console.error("Delete Ship Via Failed:", err);
-      setError(err.message || "Failed to remove mapping.");
     }
   };
 
@@ -214,15 +178,6 @@ function CarrierSettings({ activeAccountId }) {
 
       {/* Main Carrier Connection List */}
       <CarrierTable carriers={carriers} isLoading={isSyncing} />
-
-      {/* Ship Via Mapping System */}
-      <ShipViaTable
-        shipVias={shipVias}
-        carriers={carriers}
-        onAddShipVia={handleAddShipVia}
-        onDeleteShipVia={handleDeleteShipVia}
-        isSyncing={isSyncing}
-      />
 
       {/* NEW: Warehouse Locations Section */}
       <div className="mt-12 pt-8 border-t border-gray-200">

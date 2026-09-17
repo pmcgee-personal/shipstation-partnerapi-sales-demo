@@ -17,7 +17,7 @@ provider:
         - dynamodb:PutItem
         - dynamodb:GetItem
         - dynamodb:Scan
-        - dynamodb:UpdateItem # Permission to update records for adding/deleting ship vias
+        - dynamodb:UpdateItem # Permission to update records
       Resource:
         - arn:aws:dynamodb:*:*:table/shipstation-partnerapi-demo-accounts
     - Effect: Allow
@@ -44,7 +44,7 @@ functions:
           method: get
           cors: true
 
-  # New endpoint to get a single account's details, including ship vias
+  # Get a single account's details
   getAccount:
     handler: handler.getAccount
     events:
@@ -85,19 +85,4 @@ functions:
           method: post
           cors: true
 
-  # --- SHIP VIA ENDPOINTS ---
-  addShipVia:
-    handler: handler.addShipVia
-    events:
-      - http:
-          path: api/accounts/{accountId}/shipvia
-          method: post
-          cors: true
 
-  deleteShipVia:
-    handler: handler.deleteShipVia
-    events:
-      - http:
-          path: api/accounts/{accountId}/shipvia/{shipViaCode}
-          method: delete
-          cors: true

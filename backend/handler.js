@@ -230,45 +230,6 @@ module.exports.createAccount = async (event) => {
     // Force it to a string so DynamoDB accepts it!
     const shipstation_account_id = account_id.toString();
 
-    let defaultShipVias = [];
-    try {
-      const carriersResponse = await fetch(
-        "https://api.shipengine.com/v1/carriers",
-        {
-          headers: {
-            "API-Key": partnerApiKey,
-            "On-Behalf-Of": shipstation_account_id,
-          },
-        },
-      );
-      if (carriersResponse.ok) {
-        const { carriers } = await carriersResponse.json();
-        const uspsCarrier = carriers.find(
-          (c) => c.carrier_code === "stamps_com" && c.primary,
-        );
-        if (uspsCarrier) {
-          defaultShipVias.push({
-            ship_via_code: "USPSGA",
-            carrier_id: uspsCarrier.carrier_id,
-            service_code: "usps_ground_advantage",
-            package_type: "package",
-          });
-          console.log(
-            `Successfully mapped USPSGA to carrier_id: ${uspsCarrier.carrier_id}`,
-          );
-        }
-      } else {
-        console.error(
-          "Could not fetch carriers to auto-provision Ship Via:",
-          await carriersResponse.text(),
-        );
-      }
-    } catch (svError) {
-      console.error(
-        "Error during auto-provisioning of Ship Via default:",
-        svError,
-      );
-    }
 
     const params = {
       TableName: TABLE_NAME,
@@ -277,7 +238,7 @@ module.exports.createAccount = async (event) => {
         label,
         email,
         created_at: new Date().toISOString(),
-        shipVias: defaultShipVias,
+
       },
     };
     await docClient.send(new PutCommand(params));
@@ -394,153 +355,9 @@ module.exports.getAccount = async (event) => {
   }
 };
 
-module.exports.addShipVia = async (event) => {
-  try {
-    // Validate inputs
-    let bodyData = {};
-    if (event.body) {
-      if (typeof event.body === "string") {
-        bodyData = event.isBase64Encoded
-          ? JSON.parse(Buffer.from(event.body, "base64").toString("utf-8"))
-          : JSON.parse(event.body);
-      } else {
-        bodyData = event.body;
-      }
-    }
+;
 
-    const shipViaValidation = validation.validateAddShipViaInput(
-      event.pathParameters?.accountId,
-      bodyData
-    );
-    if (!shipViaValidation.isValid) {
-      return {
-        statusCode: 400,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: shipViaValidation.error }),
-      };
-    }
-
-    const { accountId, ship_via_code, carrier_id, service_code, package_type } =
-      shipViaValidation.validated;
-
-    const { Item } = await docClient.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: { account_id: accountId },
-      }),
-    );
-    if (!Item)
-      return {
-        statusCode: 404,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Account not found" }),
-      };
-
-    const shipVias = Item.shipVias || [];
-    if (
-      shipVias.some(
-        (sv) => sv.ship_via_code.toLowerCase() === ship_via_code.toLowerCase(),
-      )
-    ) {
-      return {
-        statusCode: 409,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({
-          error: `Ship Via code '${ship_via_code}' already exists for this account.`,
-        }),
-      };
-    }
-
-    const newShipVias = [
-      ...shipVias,
-      { ship_via_code, carrier_id, service_code, package_type },
-    ];
-
-    await docClient.send(
-      new UpdateCommand({
-        TableName: TABLE_NAME,
-        Key: { account_id: accountId },
-        UpdateExpression: "SET shipVias = :sv",
-        ExpressionAttributeValues: { ":sv": newShipVias },
-      }),
-    );
-
-    return {
-      statusCode: 200,
-      headers: CORS_HEADERS,
-      body: JSON.stringify({ shipVias: newShipVias }),
-    };
-  } catch (error) {
-    console.error("Error adding Ship Via:", error);
-    return {
-      statusCode: 500,
-      headers: CORS_HEADERS,
-      body: JSON.stringify({
-        error: "Internal Server Error while adding Ship Via.",
-      }),
-    };
-  }
-};
-
-module.exports.deleteShipVia = async (event) => {
-  try {
-    // Validate path parameters
-    const deleteValidation = validation.validateDeleteShipViaInput(
-      event.pathParameters?.accountId,
-      event.pathParameters?.shipViaCode
-    );
-    if (!deleteValidation.isValid) {
-      return {
-        statusCode: 400,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: deleteValidation.error }),
-      };
-    }
-
-    const { accountId, shipViaCode } = deleteValidation.validated;
-
-    const { Item } = await docClient.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: { account_id: accountId },
-      }),
-    );
-    if (!Item)
-      return {
-        statusCode: 404,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Account not found" }),
-      };
-
-    const newShipVias = (Item.shipVias || []).filter(
-      (sv) => sv.ship_via_code.toLowerCase() !== shipViaCode.toLowerCase(),
-    );
-
-    await docClient.send(
-      new UpdateCommand({
-        TableName: TABLE_NAME,
-        Key: { account_id: accountId },
-        UpdateExpression: "SET shipVias = :sv",
-        ExpressionAttributeValues: { ":sv": newShipVias },
-      }),
-    );
-
-    return {
-      statusCode: 200,
-      headers: CORS_HEADERS,
-      body: JSON.stringify({ shipVias: newShipVias }),
-    };
-  } catch (error) {
-    console.error("Error deleting Ship Via:", error);
-    return {
-      statusCode: 500,
-      headers: CORS_HEADERS,
-      body: JSON.stringify({
-        error: "Internal Server Error while deleting Ship Via.",
-      }),
-    };
-  }
-};
+;
 
 module.exports.directLogin = async (event) => {
   try {

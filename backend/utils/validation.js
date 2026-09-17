@@ -156,89 +156,6 @@ function validateCreateAccountInput(bodyData) {
   };
 }
 
-/**
- * Validate all required fields for addShipVia
- * @param {string} accountId - Account ID from path
- * @param {object} bodyData - Request body
- * @returns {object} { isValid: boolean, validated: object, error: string }
- */
-function validateAddShipViaInput(accountId, bodyData) {
-  if (!bodyData || typeof bodyData !== "object") {
-    return {
-      isValid: false,
-      validated: null,
-      error: "Request body must be a valid JSON object",
-    };
-  }
-
-  const accountIdResult = validateAccountId(accountId);
-  if (!accountIdResult.isValid) {
-    return { isValid: false, validated: null, error: accountIdResult.error };
-  }
-
-  const shipViaCodeResult = validateCarrierCode(bodyData.ship_via_code);
-  if (!shipViaCodeResult.isValid) {
-    return { isValid: false, validated: null, error: shipViaCodeResult.error };
-  }
-
-  const carrierIdResult = validateString(bodyData.carrier_id, "Carrier ID");
-  if (!carrierIdResult.isValid) {
-    return { isValid: false, validated: null, error: carrierIdResult.error };
-  }
-
-  const serviceCodeResult = validateCarrierCode(bodyData.service_code);
-  if (!serviceCodeResult.isValid) {
-    return {
-      isValid: false,
-      validated: null,
-      error: "Service code " + serviceCodeResult.error.toLowerCase(),
-    };
-  }
-
-  const packageTypeResult = validateString(bodyData.package_type, "Package type");
-  if (!packageTypeResult.isValid) {
-    return { isValid: false, validated: null, error: packageTypeResult.error };
-  }
-
-  return {
-    isValid: true,
-    validated: {
-      accountId: accountIdResult.trimmed,
-      ship_via_code: shipViaCodeResult.trimmed,
-      carrier_id: carrierIdResult.trimmed,
-      service_code: serviceCodeResult.trimmed,
-      package_type: packageTypeResult.trimmed,
-    },
-    error: null,
-  };
-}
-
-/**
- * Validate path parameters for ship via delete
- * @param {string} accountId - Account ID from path
- * @param {string} shipViaCode - Ship via code from path
- * @returns {object} { isValid: boolean, validated: object, error: string }
- */
-function validateDeleteShipViaInput(accountId, shipViaCode) {
-  const accountIdResult = validateAccountId(accountId);
-  if (!accountIdResult.isValid) {
-    return { isValid: false, validated: null, error: accountIdResult.error };
-  }
-
-  const shipViaCodeResult = validateCarrierCode(shipViaCode);
-  if (!shipViaCodeResult.isValid) {
-    return { isValid: false, validated: null, error: shipViaCodeResult.error };
-  }
-
-  return {
-    isValid: true,
-    validated: {
-      accountId: accountIdResult.trimmed,
-      shipViaCode: shipViaCodeResult.trimmed,
-    },
-    error: null,
-  };
-}
 
 /**
  * Validate path parameters for handlers that need accountId
@@ -291,8 +208,7 @@ module.exports = {
   validateCarrierCode,
   validateLabel,
   validateCreateAccountInput,
-  validateAddShipViaInput,
-  validateDeleteShipViaInput,
+
   validateAccountIdPath,
   validateDirectLoginInput,
 };

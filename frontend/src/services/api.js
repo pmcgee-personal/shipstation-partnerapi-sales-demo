@@ -86,44 +86,4 @@ export const api = {
     const data = await response.json();
     return data.carriers || [];
   },
-
-  // --- NEW SHIP VIA ENDPOINTS ---
-
-  getAccount: async (accountId) => {
-    const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch account details");
-    }
-    return response.json();
-  },
-
-  addShipVia: async (accountId, shipViaData) => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/accounts/${accountId}/shipvia`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(shipViaData),
-      },
-    );
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || "Failed to add Ship Via");
-    }
-    return response.json();
-  },
-
-  deleteShipVia: async (accountId, shipViaCode) => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/accounts/${accountId}/shipvia/${shipViaCode}`,
-      {
-        method: "DELETE",
-      },
-    );
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || "Failed to delete Ship Via");
-    }
-    return response.json();
-  },
 };

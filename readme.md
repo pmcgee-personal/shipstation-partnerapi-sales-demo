@@ -1,6 +1,6 @@
 # ShipStation Partner API Sales Demo
 
-A full-stack test harness demonstrating ShipStation Partner API integration with account provisioning, carrier management, and warehouse location tracking.
+A full-stack test harness demonstrating ShipStation Partner API integration with account provisioning and carrier management.
 
 ---
 
@@ -30,6 +30,7 @@ A full-stack test harness demonstrating ShipStation Partner API integration with
 ```
 
 **Tech Stack:**
+
 - **Frontend:** React 18 + Vite + TailwindCSS
 - **Backend:** Node.js 20 + AWS Lambda + API Gateway
 - **Database:** DynamoDB
@@ -88,11 +89,13 @@ cd ../backend && npm install
 ### Local Development
 
 **Frontend:**
+
 ```bash
 cd frontend && npm run dev
 ```
 
 **Backend (requires AWS credentials):**
+
 ```bash
 cd backend && serverless deploy
 ```
@@ -116,11 +119,13 @@ aws ssm put-parameter \
 ## 🧪 Testing
 
 **Unit Tests:**
+
 ```bash
 cd frontend && npm run test
 ```
 
 **E2E Tests (Cypress):**
+
 ```bash
 cd frontend && npm run cypress:run
 ```
@@ -130,14 +135,17 @@ cd frontend && npm run cypress:run
 ## 📝 What We Built
 
 ### Accounts
+
 - `POST /api/accounts` — Create new account
 - `GET /api/accounts` — List all accounts
 - `GET /api/accounts/{accountId}` — Get account details
 
 ### Carriers
+
 - `POST /api/direct-login` — Get ShipStation direct login URL
 - `GET /api/carriers/{accountId}` — List carriers for account
 
 ### Warehouses
+
 - `GET /api/warehouses/{accountId}` — List warehouse locations
 - `POST /api/warehouses/{accountId}` — Create new warehouse

@@ -1,6 +1,6 @@
 describe('Create Account Flow', () => {
   beforeEach(() => {
-    cy.visit('/');
+    cy.visitAuthenticated('/');
   });
 
   it('should display create account form', () => {

@@ -10,6 +10,12 @@ provider:
     LOG_LEVEL: ${env:LOG_LEVEL, 'info'}
     SSM_PARAM_API_KEY: ${env:SSM_PARAM_API_KEY, '/shipstation-demo/partner-api-key'}
     SSM_PARAM_THEME_ID: ${env:SSM_PARAM_THEME_ID, '/shipstation-demo/theme-id'}
+    ALLOWED_EMAIL: ${env:ALLOWED_EMAIL, 'p.mcgee1986@gmail.com'}
+    ALLOWED_EMAIL_DOMAIN: ${env:ALLOWED_EMAIL_DOMAIN, '@shipstation.com'}
+    COGNITO_USER_POOL_ID:
+      Ref: AuthUserPool
+    COGNITO_CLIENT_ID:
+      Ref: AuthUserPoolClient
   # For backwards-compatibility with Serverless v2, we declare permissions here:
   iamRoleStatements:
     - Effect: Allow
@@ -25,6 +31,14 @@ provider:
         - ssm:GetParameter
       Resource:
         - arn:aws:ssm:*:*:parameter/shipstation-demo/*
+    - Effect: Allow
+      Action:
+        - cognito-idp:AdminCreateUser
+        - cognito-idp:AdminGetUser
+        - cognito-idp:AdminInitiateAuth
+        - cognito-idp:AdminRespondToAuthChallenge
+      Resource:
+        - Fn::GetAtt: [AuthUserPool, Arn]
 
 # We will define our Lambda endpoints here.
 functions:
@@ -35,6 +49,11 @@ functions:
           path: api/accounts
           method: post
           cors: true
+          authorizer: &cognitoAuthorizer
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn:
+              Fn::GetAtt: [AuthUserPool, Arn]
 
   listAccounts:
     handler: handler.listAccounts
@@ -43,6 +62,7 @@ functions:
           path: api/accounts
           method: get
           cors: true
+          authorizer: *cognitoAuthorizer
 
   # Get a single account's details
   getAccount:
@@ -52,6 +72,7 @@ functions:
           path: api/accounts/{accountId}
           method: get
           cors: true
+          authorizer: *cognitoAuthorizer
 
   directLogin:
     handler: handler.directLogin
@@ -60,6 +81,7 @@ functions:
           path: api/direct-login
           method: post
           cors: true
+          authorizer: *cognitoAuthorizer
 
   listCarriers:
     handler: handler.listCarriers
@@ -68,6 +90,7 @@ functions:
           path: api/carriers/{accountId}
           method: get
           cors: true
+          authorizer: *cognitoAuthorizer
 
   listWarehouses:
     handler: handler.listWarehouses
@@ -76,6 +99,7 @@ functions:
           path: api/warehouses/{accountId}
           method: get
           cors: true
+          authorizer: *cognitoAuthorizer
 
   createWarehouse:
     handler: handler.createWarehouse
@@ -84,10 +108,91 @@ functions:
           path: api/warehouses/{accountId}
           method: post
           cors: true
+          authorizer: *cognitoAuthorizer
+
+  # Public, unauthenticated: issuing the very first credential.
+  requestOtp:
+    handler: handler.requestOtp
+    events:
+      - http:
+          path: api/auth/request-code
+          method: post
+          cors: true
+
+  verifyOtp:
+    handler: handler.verifyOtp
+    events:
+      - http:
+          path: api/auth/verify-code
+          method: post
+          cors: true
 
 # CloudWatch Alarms for monitoring
 resources:
   Resources:
+    # Cognito User Pool: passwordless email OTP sign-in.
+    # AllowedFirstAuthFactors/EMAIL_OTP requires the Essentials feature
+    # tier, which is the CloudFormation default for new user pools.
+    AuthUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: ${self:service}-${self:provider.stage}-users
+        UserPoolTier: ESSENTIALS
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+        MfaConfiguration: OFF
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: true
+        EmailConfiguration:
+          EmailSendingAccount: COGNITO_DEFAULT
+        Policies:
+          SignInPolicy:
+            AllowedFirstAuthFactors:
+              - EMAIL_OTP
+              - PASSWORD
+        Schema:
+          - Name: email
+            AttributeDataType: String
+            Mutable: true
+            Required: true
+
+    AuthUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: ${self:service}-${self:provider.stage}-client
+        UserPoolId:
+          Ref: AuthUserPool
+        ExplicitAuthFlows:
+          - ALLOW_USER_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+        GenerateSecret: false
+        PreventUserExistenceErrors: ENABLED
+
+    # Without these, API Gateway drops CORS headers on 401/403 responses
+    # from the Cognito authorizer, and browsers surface an opaque CORS
+    # error instead of the real status code.
+    GatewayResponseUnauthorized:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseType: UNAUTHORIZED
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+
+    GatewayResponseAccessDenied:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseType: ACCESS_DENIED
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+
     # Alarm: Lambda Errors
     LambdaErrorsAlarm:
       Type: AWS::CloudWatch::Alarm

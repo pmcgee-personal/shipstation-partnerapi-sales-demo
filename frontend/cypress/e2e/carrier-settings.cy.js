@@ -1,7 +1,7 @@
 describe('Carrier Settings Page', () => {
   beforeEach(() => {
     // Visit the app
-    cy.visit('/');
+    cy.visitAuthenticated('/');
     
     // Mock the API responses for faster testing
     cy.intercept('GET', '**/api/accounts', {
@@ -106,7 +106,7 @@ describe('Carrier Settings Page', () => {
 
   it('should handle no account selected state', () => {
     // Don't select an account, navigate directly
-    cy.visit('/');
+    cy.visitAuthenticated('/');
 
     // Should show warning message
     cy.contains('No Demo Account Selected').should('be.visible');

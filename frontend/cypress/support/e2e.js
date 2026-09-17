@@ -7,6 +7,25 @@ Cypress.Commands.add('selectAccount', (email) => {
   cy.contains(email).click();
 });
 
+// Visit the app with a pre-seeded, non-expired auth session so specs that
+// exercise the dashboard don't have to drive the OTP login flow first.
+Cypress.Commands.add('visitAuthenticated', (url = '/') => {
+  cy.visit(url, {
+    onBeforeLoad(win) {
+      win.localStorage.setItem(
+        'ss_auth_session',
+        JSON.stringify({
+          idToken: 'test-id-token',
+          accessToken: 'test-access-token',
+          refreshToken: 'test-refresh-token',
+          email: 'test@shipstation.com',
+          expiresAt: Date.now() + 60 * 60 * 1000,
+        }),
+      );
+    },
+  });
+});
+
 // Custom command to wait for API response
 Cypress.Commands.add('waitForAPI', (method, path) => {
   cy.intercept(method, `**/api/**${path}`).as('api');

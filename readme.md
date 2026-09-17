@@ -9,6 +9,7 @@ A full-stack test harness demonstrating ShipStation Partner API integration with
 ```
 ┌─────────────────────────────────────────┐
 │  React Frontend (Vite)                  │
+│  ├─ Login Gate: Cognito email OTP       │
 │  ├─ Dashboard: Account creation         │
 │  ├─ Carrier Settings: Sync & connect    │
 │  └─ Warehouse Locations: Add locations  │
@@ -17,22 +18,24 @@ A full-stack test harness demonstrating ShipStation Partner API integration with
                   ▼
 ┌─────────────────────────────────────────┐
 │  AWS API Gateway + Lambda (Node.js 20)  │
-│  ├─ createAccount, listAccounts         │
-│  ├─ directLogin (to ShipStation)        │
-│  ├─ listCarriers, listWarehouses        │
-│  └─ createWarehouse                     │
+│  ├─ requestOtp, verifyOtp (public)      │
+│  ├─ createAccount, listAccounts   ┐     │
+│  ├─ directLogin (to ShipStation)  ├ Cognito-authorized
+│  ├─ listCarriers, listWarehouses  │     │
+│  └─ createWarehouse               ┘     │
 └─────────────────┬───────────────────────┘
                   │
-        ┌─────────┴──────────┬──────────┐
-        ▼                    ▼          ▼
-    DynamoDB          ShipStation    AWS SSM
-    (accounts)        (carriers)     (secrets)
+        ┌─────────┼──────────┬──────────┐
+        ▼         ▼          ▼          ▼
+    DynamoDB   Cognito    ShipStation  AWS SSM
+    (accounts) (OTP auth)  (carriers)  (secrets)
 ```
 
 **Tech Stack:**
 
 - **Frontend:** React 18 + Vite + TailwindCSS
 - **Backend:** Node.js 20 + AWS Lambda + API Gateway
+- **Auth:** Amazon Cognito passwordless email OTP + Cognito API Gateway authorizer
 - **Database:** DynamoDB
 - **Storage:** S3 + CloudFront
 - **Testing:** Cypress (E2E)
@@ -48,6 +51,7 @@ shipstation-partnerapi-sales-demo/
 │   │   ├── components/           # UI components
 │   │   │   ├─ CarrierTable.jsx
 │   │   │   ├─ LocationTable.jsx
+│   │   │   ├─ LoginGate.jsx      # OTP login gate
 │   │   │   └─ DemoBar.jsx
 │   │   ├── shells/               # Page containers
 │   │   │   ├─ CarrierSettings.jsx
@@ -55,7 +59,8 @@ shipstation-partnerapi-sales-demo/
 │   │   │   ├─ WarehouseLocationsSection.jsx
 │   │   │   └─ Layout.jsx
 │   │   ├── services/
-│   │   │   └─ api.js             # API client
+│   │   │   ├─ api.js             # API client
+│   │   │   └─ auth.js            # Local session storage for the OTP login
 │   │   └── App.jsx
 │   ├── cypress/
 │   │   └── e2e/                  # E2E tests
@@ -66,6 +71,7 @@ shipstation-partnerapi-sales-demo/
 │   ├── serverless.yml            # Infrastructure
 │   ├── utils/
 │   │   ├─ validation.js
+│   │   ├─ auth.js                # Cognito OTP helpers
 │   │   ├─ database.js
 │   │   ├─ warehouse.js
 │   │   └─ api-clients.js
@@ -114,6 +120,17 @@ aws ssm put-parameter \
   --type String --overwrite
 ```
 
+Sign-in is restricted to an allow-list checked by the `requestOtp` handler.
+Defaults live in `backend/serverless.yml` (`ALLOWED_EMAIL`,
+`ALLOWED_EMAIL_DOMAIN`) and can be overridden per deploy:
+
+```bash
+ALLOWED_EMAIL="you@example.com" ALLOWED_EMAIL_DOMAIN="@yourcompany.com" serverless deploy
+```
+
+No SES setup is required: Cognito's built-in email service delivers the
+one-time codes.
+
 ---
 
 ## 🧪 Testing
@@ -133,6 +150,14 @@ cd frontend && npm run cypress:run
 ---
 
 ## 📝 What We Built
+
+### Auth
+
+- `POST /api/auth/request-code` — Send an email OTP (allow-listed emails only, public)
+- `POST /api/auth/verify-code` — Verify the OTP and issue a Cognito ID token (public)
+
+All other endpoints below require that ID token in the `Authorization` header
+(enforced by a Cognito API Gateway authorizer).
 
 ### Accounts
 

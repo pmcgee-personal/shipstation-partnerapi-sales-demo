@@ -7,6 +7,7 @@ import {
   ChevronDown,
   Loader2,
   AlertCircle,
+  LogOut,
 } from "lucide-react";
 import { api } from "../services/api";
 
@@ -15,10 +16,12 @@ import { generateDemoDetails } from "../utils/demoUtils";
 
 // 2. The inline generator definition has been completely removed.
 
-function DemoBar({ activeAccountId, setActiveAccountId }) {
+function DemoBar({ activeAccountId, setActiveAccountId, userEmail, onLogout }) {
   DemoBar.propTypes = {
     activeAccountId: PropTypes.string,
     setActiveAccountId: PropTypes.func,
+    userEmail: PropTypes.string,
+    onLogout: PropTypes.func,
   };
   const [accounts, setAccounts] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -134,6 +137,21 @@ function DemoBar({ activeAccountId, setActiveAccountId }) {
         </button>
 
         <div className="w-px h-4 bg-slate-700"></div>
+
+        {userEmail ? (
+          <span className="text-slate-500 text-xs" title="Signed in as">
+            {userEmail}
+          </span>
+        ) : null}
+
+        <button
+          onClick={onLogout}
+          className="flex items-center space-x-1 text-slate-400 hover:text-rose-400 transition-colors"
+          title="Sign out"
+        >
+          <LogOut size={14} />
+          <span>Sign out</span>
+        </button>
 
         <button
           onClick={handleReset}

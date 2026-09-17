@@ -1,6 +1,6 @@
 describe('Warehouse Locations', () => {
   beforeEach(() => {
-    cy.visit('/');
+    cy.visitAuthenticated('/');
 
     // Mock account selection
     cy.intercept('GET', '**/api/accounts', {

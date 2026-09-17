@@ -18,6 +18,13 @@
 ### Previous: Error Handling, Linting, CI/CD, Node.js 20
 - All from prior sessions working and stable
 
+### Priority 2.5: Authentication (Cognito Email OTP)
+- Added a Cognito user pool with native passwordless email OTP (`AllowedFirstAuthFactors: EMAIL_OTP`) — no SES setup, Cognito's built-in mailer delivers codes
+- Backend `requestOtp`/`verifyOtp` handlers gate sign-in to an allow-list (single email + `@shipstation.com` domain), configurable via `ALLOWED_EMAIL`/`ALLOWED_EMAIL_DOMAIN`
+- All business endpoints (`accounts`, `direct-login`, `carriers`, `warehouses`) now require a Cognito ID token via an API Gateway `COGNITO_USER_POOLS` authorizer — the frontend login gate is backed by real API-level enforcement, not just a UI check
+- Frontend: `LoginGate` component blocks the dashboard until OTP verification; `services/auth.js` manages the local session; `services/api.js` attaches the ID token and clears the session on 401
+- **Status:** Live and working
+
 ---
 
 ## 🎯 PRIORITY 3: Monitoring & Logging
@@ -78,6 +85,7 @@ logger.info(`Created account`, { requestId, accountId });
 | Component | Status |
 |-----------|--------|
 | Input Validation | ✅ Done |
+| Authentication (Cognito OTP) | ✅ Done |
 | Environment Config | ✅ Done |
 | Error Handling | ✅ Done |
 | CI/CD Pipeline | ✅ Done |
@@ -92,7 +100,10 @@ logger.info(`Created account`, { requestId, accountId });
 ## 🔗 Key Files
 
 - Frontend API: `frontend/src/services/api.js`
+- Frontend auth session: `frontend/src/services/auth.js`
+- Frontend login gate: `frontend/src/components/LoginGate.jsx`
 - Backend handlers: `backend/handler.js`
+- Backend auth (Cognito OTP): `backend/utils/auth.js`
 - Validation: `backend/utils/validation.js`
 - Config: `backend/serverless.yml`
 - CI/CD: `.github/workflows/deploy.yml`

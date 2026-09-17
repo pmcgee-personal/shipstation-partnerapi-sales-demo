@@ -7,6 +7,7 @@ const {
   UpdateCommand,
 } = require("@aws-sdk/lib-dynamodb");
 const validation = require("./utils/validation");
+const auth = require("./utils/auth");
 
 const { SSMClient, GetParameterCommand } = require("@aws-sdk/client-ssm");
 
@@ -640,6 +641,167 @@ module.exports.createWarehouse = async (event) => {
       body: JSON.stringify({
         error: "Internal Server Error during warehouse manual creation",
       }),
+    };
+  }
+};
+
+module.exports.requestOtp = async (event, context) => {
+  const requestId = getRequestId(context);
+  try {
+    let bodyData = {};
+    if (event.body) {
+      if (typeof event.body === "string") {
+        bodyData = event.isBase64Encoded
+          ? JSON.parse(Buffer.from(event.body, "base64").toString("utf-8"))
+          : JSON.parse(event.body || "{}");
+      } else {
+        bodyData = event.body;
+      }
+    }
+
+    const emailValidation = validation.validateEmail(bodyData.email);
+    if (!emailValidation.isValid) {
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: emailValidation.error }),
+      };
+    }
+
+    const email = emailValidation.trimmed;
+    if (!auth.isAllowedEmail(email)) {
+      logger.info("REQUEST_OTP_DENIED", { email }, requestId);
+      return {
+        statusCode: 403,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: "Access is restricted to ShipStation team emails." }),
+      };
+    }
+
+    await auth.ensureUserExists(email);
+    const { challengeName, session } = await auth.startEmailOtp(email);
+
+    if (challengeName !== "EMAIL_OTP") {
+      logger.error("REQUEST_OTP_UNEXPECTED_CHALLENGE", { challengeName }, requestId);
+      return {
+        statusCode: 500,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: "Unable to start sign-in. Please try again." }),
+      };
+    }
+
+    logger.info("REQUEST_OTP_SENT", { email }, requestId);
+    return {
+      statusCode: 200,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ session }),
+    };
+  } catch (error) {
+    logger.error("REQUEST_OTP_ERROR", { message: error.message }, requestId);
+    return {
+      statusCode: 500,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ error: "Internal Server Error while sending code" }),
+    };
+  }
+};
+
+module.exports.verifyOtp = async (event, context) => {
+  const requestId = getRequestId(context);
+  try {
+    let bodyData = {};
+    if (event.body) {
+      if (typeof event.body === "string") {
+        bodyData = event.isBase64Encoded
+          ? JSON.parse(Buffer.from(event.body, "base64").toString("utf-8"))
+          : JSON.parse(event.body || "{}");
+      } else {
+        bodyData = event.body;
+      }
+    }
+
+    const emailValidation = validation.validateEmail(bodyData.email);
+    if (!emailValidation.isValid) {
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: emailValidation.error }),
+      };
+    }
+    const email = emailValidation.trimmed;
+    const code = typeof bodyData.code === "string" ? bodyData.code.trim() : "";
+    const session = typeof bodyData.session === "string" ? bodyData.session : "";
+
+    if (!code || !session) {
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: "Code and session are required." }),
+      };
+    }
+    if (!auth.isAllowedEmail(email)) {
+      return {
+        statusCode: 403,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: "Access is restricted to ShipStation team emails." }),
+      };
+    }
+
+    let result;
+    try {
+      result = await auth.verifyEmailOtp(email, code, session);
+    } catch (error) {
+      if (error.name === "CodeMismatchException") {
+        return {
+          statusCode: 400,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ error: "Incorrect code. Please try again." }),
+        };
+      }
+      if (error.name === "ExpiredCodeException") {
+        return {
+          statusCode: 400,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ error: "That code expired. Request a new one." }),
+        };
+      }
+      if (error.name === "NotAuthorizedException" || error.name === "TooManyFailedAttemptsException") {
+        return {
+          statusCode: 401,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ error: "Too many attempts. Request a new code." }),
+        };
+      }
+      throw error;
+    }
+
+    if (!result.tokens) {
+      logger.error("VERIFY_OTP_UNEXPECTED_CHALLENGE", { challengeName: result.challengeName }, requestId);
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: "Unexpected authentication state. Request a new code." }),
+      };
+    }
+
+    logger.info("VERIFY_OTP_SUCCESS", { email }, requestId);
+    return {
+      statusCode: 200,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({
+        idToken: result.tokens.IdToken,
+        accessToken: result.tokens.AccessToken,
+        refreshToken: result.tokens.RefreshToken,
+        expiresIn: result.tokens.ExpiresIn,
+        email,
+      }),
+    };
+  } catch (error) {
+    logger.error("VERIFY_OTP_ERROR", { message: error.message }, requestId);
+    return {
+      statusCode: 500,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ error: "Internal Server Error while verifying code" }),
     };
   }
 };

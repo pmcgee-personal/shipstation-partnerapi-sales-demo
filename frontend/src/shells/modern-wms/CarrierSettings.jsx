@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { Info } from "lucide-react";
 import { api } from "../../services/api";
@@ -26,14 +26,7 @@ function CarrierSettings({ activeAccountId }) {
   // Common
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (activeAccountId) {
-      loadCarrierSettings();
-      fetchWarehouses();
-    }
-  }, [activeAccountId]);
-
-  const loadCarrierSettings = async () => {
+  const loadCarrierSettings = useCallback(async () => {
     setIsSyncing(true);
     setError(null);
     try {
@@ -46,29 +39,30 @@ function CarrierSettings({ activeAccountId }) {
     } finally {
       setIsSyncing(false);
     }
-  };
+  }, [activeAccountId]);
 
-  const fetchWarehouses = async () => {
+  const fetchWarehouses = useCallback(async () => {
     if (!activeAccountId) return;
     setIsLoadingWarehouses(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/warehouses/${activeAccountId}`,
-      );
-      if (!response.ok)
-        throw new Error(
-          "Failed to load warehouse locations from ShipStation API.",
-        );
-      const data = await response.json();
-      setWarehouses(data.warehouses || []);
+      const warehousesData = await api.listWarehouses(activeAccountId);
+      setWarehouses(warehousesData);
     } catch (err) {
-      console.error(err);
-      setError(err.message);
+      console.error("Failed to load warehouses:", err);
+      setError("Failed to load warehouse locations.");
     } finally {
       setIsLoadingWarehouses(false);
     }
-  };
+  }, [activeAccountId]);
+
+  useEffect(() => {
+    if (activeAccountId) {
+      loadCarrierSettings();
+      fetchWarehouses();
+    }
+  }, [activeAccountId, loadCarrierSettings, fetchWarehouses]);
+
 
   const handleAddLocation = async () => {
     if (!activeAccountId) return;

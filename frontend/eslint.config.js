@@ -5,6 +5,23 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
+  {
+    files: ['cypress/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        describe: 'readonly',
+        it: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        cy: 'readonly',
+        Cypress: 'readonly',
+      },
+    },
+    rules: {
+      'no-unused-vars': 'off',
+    },
+  },
   { ignores: ['dist'] },
   {
     files: ['**/*.{js,jsx}'],

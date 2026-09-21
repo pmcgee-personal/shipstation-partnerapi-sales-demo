@@ -12,7 +12,10 @@ A full-stack test harness demonstrating ShipStation Partner API integration with
 │  ├─ Login Gate: Cognito email OTP       │
 │  ├─ Dashboard: Account creation         │
 │  ├─ Carrier Settings: Sync & connect    │
-│  └─ Warehouse Locations: Add locations  │
+│  ├─ Warehouse Locations: Add locations  │
+│  └─ Account Settings: ShipEngine        │
+│     Elements (carriers, external        │
+│     carriers, payment, warehouses)      │
 └─────────────────┬───────────────────────┘
                   │
                   ▼
@@ -20,15 +23,18 @@ A full-stack test harness demonstrating ShipStation Partner API integration with
 │  AWS API Gateway + Lambda (Node.js 20)  │
 │  ├─ requestOtp, verifyOtp (public)      │
 │  ├─ createAccount, listAccounts   ┐     │
-│  ├─ directLogin (to ShipStation)  ├ Cognito-authorized
-│  ├─ listCarriers, listWarehouses  │     │
-│  └─ createWarehouse               ┘     │
+│  ├─ directLogin (to ShipStation)  │     │
+│  ├─ listCarriers, listWarehouses  ├ Cognito-authorized
+│  ├─ createWarehouse               │     │
+│  └─ generateElementsToken         ┘     │
 └─────────────────┬───────────────────────┘
                   │
         ┌─────────┼──────────┬──────────┐
         ▼         ▼          ▼          ▼
     DynamoDB   Cognito    ShipStation  AWS SSM
-    (accounts) (OTP auth)  (carriers)  (secrets)
+    (accounts) (OTP auth)  + Elements  (secrets)
+                            (carriers,
+                             JWT signing key)
 ```
 
 **Tech Stack:**
@@ -38,6 +44,8 @@ A full-stack test harness demonstrating ShipStation Partner API integration with
 - **Auth:** Amazon Cognito passwordless email OTP + Cognito API Gateway authorizer
 - **Database:** DynamoDB
 - **Storage:** S3 + CloudFront
+- **Elements:** `@shipengine/elements` (Account Settings, Connect External
+  Carrier, Manage External Carriers React components)
 - **Testing:** Cypress (E2E)
 
 ---
@@ -53,10 +61,11 @@ shipstation-partnerapi-sales-demo/
 │   │   │   ├─ LocationTable.jsx
 │   │   │   ├─ LoginGate.jsx      # OTP login gate
 │   │   │   └─ DemoBar.jsx
-│   │   ├── shells/               # Page containers
+│   │   ├─ shells/               # Page containers
 │   │   │   ├─ CarrierSettings.jsx
 │   │   │   ├─ CarrierTableSection.jsx
 │   │   │   ├─ WarehouseLocationsSection.jsx
+│   │   │   ├─ AccountSettingsElement.jsx  # ShipEngine Elements page
 │   │   │   └─ Layout.jsx
 │   │   ├── services/
 │   │   │   ├─ api.js             # API client
@@ -194,9 +203,30 @@ All other endpoints below require that ID token in the `Authorization` header
 ### ShipEngine Elements
 
 - `GET /api/elements-token/{accountId}` — Sign a short-lived (1hr) ShipEngine
-  Elements Platform JWT (RS256) for the given seller account. Used by the
-  "Account Settings (Elements)" page's `ElementsProvider.getToken` callback;
-  the private key never reaches the browser.
+  Elements Platform JWT (RS256) for the given seller account, using
+  `jsonwebtoken` and a private key held server-side only (AWS SSM
+  SecureString). Never exposed to the browser.
+
+The "Account Settings" nav page (`AccountSettingsElement.jsx`) wraps this
+token endpoint in `ElementsProvider` and renders three `@shipengine/elements`
+React components side by side:
+
+- `AccountSettings.Element` — carriers, external carriers, payment method,
+  warehouses, units, and label layout in one workflow (default view, no
+  feature overrides)
+- `ConnectExternalCarrier.Element` — connect a new external carrier account
+  (picker built from `enabledExternalCarriers`)
+- `ManageExternalCarriers.Element` — view/manage already-connected external
+  carrier accounts, stacked underneath Connect External Carrier
+
+`AccountSettings.Element` and the `ConnectExternalCarrier`/`ManageExternalCarriers`
+pair each mount into their own `container` ref (two containers, side by
+side) so they get separate shadow roots (`ElementsProvider`'s `container`
+prop controls where its shadow root attaches; left unset, every Element
+under one provider shares one implicit `elements-container` shadow root and
+stacks regardless of any outer layout CSS). Connect and Manage External
+Carrier intentionally share one container since they're meant to stack
+within the same column.
 
 **CSP note:** this app doesn't currently set a Content-Security-Policy
 header/meta tag, so the Elements payment-method iframe

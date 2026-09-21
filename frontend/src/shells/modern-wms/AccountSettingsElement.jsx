@@ -17,7 +17,7 @@ import { themeConfig } from "./themeConfig";
 // "Connecting Carrier Accounts" section of the getting-started guide.
 // Matches the USPS/UPS/FedEx story already used in the mock dashboard data.
 const ENABLED_SHIPENGINE_CARRIERS = ["stamps_com", "ups"];
-const ENABLED_EXTERNAL_CARRIERS = ["ups", "fedex", "dhl_express"];
+const ENABLED_EXTERNAL_CARRIERS = ["ups", "fedex"];
 
 // Minimal theme so buttons/links pick up the app's accent color instead of
 // the Elements default gray fallback. Every themeConfig field is optional.
@@ -67,6 +67,7 @@ function AccountSettingsElement({ activeAccountId }) {
           globalFeatures: {
             enabledShipEngineCarriers: ENABLED_SHIPENGINE_CARRIERS,
             enabledExternalCarriers: ENABLED_EXTERNAL_CARRIERS,
+            poweredByShipEngine: false,
           },
         }}
       >

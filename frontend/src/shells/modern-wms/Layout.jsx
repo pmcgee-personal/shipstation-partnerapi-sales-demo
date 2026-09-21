@@ -6,7 +6,6 @@ import {
   Truck,
   Settings,
   Settings2,
-  UserCog,
   Users,
 } from "lucide-react";
 
@@ -42,8 +41,8 @@ function Layout({ activeAccountId }) {
     { id: "settings", label: "Carrier Settings", icon: Settings },
     {
       id: "account-settings-element",
-      label: "Account Settings (Elements)",
-      icon: UserCog,
+      label: "Account Settings",
+      icon: Settings,
     },
   ];
 

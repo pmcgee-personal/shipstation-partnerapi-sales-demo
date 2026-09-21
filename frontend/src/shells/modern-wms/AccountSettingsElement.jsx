@@ -5,7 +5,7 @@
 // layout) for the active demo seller account.
 //
 // https://docs.shipstation.com/apis/shipengine/docs/elements/getting-started
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { Info } from "lucide-react";
 import {
@@ -40,6 +40,20 @@ function AccountSettingsElement({ activeAccountId }) {
     return api.getElementsToken(activeAccountId);
   }, [activeAccountId]);
 
+  // ElementsProvider's `container` prop is where its shadow root attaches.
+  // Left unset, *every* Element under one provider shares a single implicit
+  // `elements-container` shadow root -- which is why AccountSettings and
+  // ConnectExternalCarrier previously stacked in one box regardless of any
+  // outer grid CSS. Two providers, each pointed at its own ref, mount their
+  // shadow roots at two distinct DOM locations instead.
+  const leftContainerRef = useRef(null);
+  const rightContainerRef = useRef(null);
+  const [containersMounted, setContainersMounted] = useState(false);
+
+  useEffect(() => {
+    setContainersMounted(true);
+  }, []);
+
   if (!activeAccountId) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 flex items-center space-x-4">
@@ -55,36 +69,47 @@ function AccountSettingsElement({ activeAccountId }) {
     );
   }
 
+  const sharedProviderProps = {
+    key: activeAccountId,
+    getToken,
+    themeConfig: elementsThemeConfig,
+    onError: (err) => console.error("[ShipEngine Elements]", err),
+    features: {
+      globalFeatures: {
+        enabledShipEngineCarriers: ENABLED_SHIPENGINE_CARRIERS,
+        enabledExternalCarriers: ENABLED_EXTERNAL_CARRIERS,
+        poweredByShipEngine: false,
+      },
+    },
+  };
+
   return (
     <div
       className={`${themeConfig.colors.cardBg} p-6 rounded-lg shadow-sm border border-gray-100`}
     >
-      <ElementsProvider
-        // Re-created only when the active account changes, so switching
-        // accounts in the demo bar tears down and re-mounts against the
-        // new tenant's token instead of caching the previous one.
-        key={activeAccountId}
-        getToken={getToken}
-        themeConfig={elementsThemeConfig}
-        onError={(err) => console.error("[ShipEngine Elements]", err)}
-        features={{
-          globalFeatures: {
-            enabledShipEngineCarriers: ENABLED_SHIPENGINE_CARRIERS,
-            enabledExternalCarriers: ENABLED_EXTERNAL_CARRIERS,
-            poweredByShipEngine: false,
-          },
-        }}
-      >
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div ref={leftContainerRef} />
+        <div ref={rightContainerRef} />
+      </div>
+
+      {containersMounted && leftContainerRef.current && (
+        <ElementsProvider {...sharedProviderProps} container={leftContainerRef.current}>
           <AccountSettings.Element />
+        </ElementsProvider>
+      )}
+
+      {containersMounted && rightContainerRef.current && (
+        <ElementsProvider {...sharedProviderProps} container={rightContainerRef.current}>
           <ConnectExternalCarrier.Element
             onCarrierConnected={() =>
               console.log("[ShipEngine Elements] carrier connected")
             }
-            onCancel={() => console.log("[ShipEngine Elements] connect-carrier cancelled")}
+            onCancel={() =>
+              console.log("[ShipEngine Elements] connect-carrier cancelled")
+            }
           />
-        </div>
-      </ElementsProvider>
+        </ElementsProvider>
+      )}
     </div>
   );
 }

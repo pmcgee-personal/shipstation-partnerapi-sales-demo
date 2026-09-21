@@ -8,7 +8,11 @@
 import { useCallback } from "react";
 import PropTypes from "prop-types";
 import { Info } from "lucide-react";
-import { AccountSettings, ElementsProvider } from "@shipengine/elements";
+import {
+  AccountSettings,
+  ConnectExternalCarrier,
+  ElementsProvider,
+} from "@shipengine/elements";
 import { api } from "../../services/api";
 import { themeConfig } from "./themeConfig";
 
@@ -71,7 +75,15 @@ function AccountSettingsElement({ activeAccountId }) {
           },
         }}
       >
-        <AccountSettings.Element />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <AccountSettings.Element />
+          <ConnectExternalCarrier.Element
+            onCarrierConnected={() =>
+              console.log("[ShipEngine Elements] carrier connected")
+            }
+            onCancel={() => console.log("[ShipEngine Elements] connect-carrier cancelled")}
+          />
+        </div>
       </ElementsProvider>
     </div>
   );

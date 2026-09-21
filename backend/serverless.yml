@@ -10,6 +10,14 @@ provider:
     LOG_LEVEL: ${env:LOG_LEVEL, 'info'}
     SSM_PARAM_API_KEY: ${env:SSM_PARAM_API_KEY, '/shipstation-demo/partner-api-key'}
     SSM_PARAM_THEME_ID: ${env:SSM_PARAM_THEME_ID, '/shipstation-demo/theme-id'}
+    SSM_PARAM_ELEMENTS_PRIVATE_KEY: ${env:SSM_PARAM_ELEMENTS_PRIVATE_KEY, '/shipstation-demo/elements/private-key'}
+    # ShipEngine Elements platform-token signing: values from ShipEngine
+    # partner onboarding (technical contact). No defaults -- generateElementsToken
+    # returns a 500 until these are set for the deploy stage.
+    SHIPENGINE_PARTNER_ID: ${env:SHIPENGINE_PARTNER_ID, ''}
+    SHIPENGINE_SCOPE: ${env:SHIPENGINE_SCOPE, ''}
+    SHIPENGINE_PLATFORM_ISSUER: ${env:SHIPENGINE_PLATFORM_ISSUER, ''}
+    SHIPENGINE_PLATFORM_KEY_ID: ${env:SHIPENGINE_PLATFORM_KEY_ID, ''}
     ALLOWED_EMAIL: ${env:ALLOWED_EMAIL, 'p.mcgee1986@gmail.com'}
     ALLOWED_EMAIL_DOMAIN: ${env:ALLOWED_EMAIL_DOMAIN, '@shipstation.com'}
     # COGNITO_USER_POOL_ID/COGNITO_CLIENT_ID are set per-function below
@@ -110,6 +118,17 @@ functions:
       - http:
           path: api/warehouses/{accountId}
           method: post
+          cors: true
+          authorizer: *cognitoAuthorizer
+
+  # Signs a ShipEngine Elements Platform JWT (RS256) for the given seller
+  # account. Server-side only -- see handler.generateElementsToken.
+  generateElementsToken:
+    handler: handler.generateElementsToken
+    events:
+      - http:
+          path: api/elements-token/{accountId}
+          method: get
           cors: true
           authorizer: *cognitoAuthorizer
 

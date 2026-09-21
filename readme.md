@@ -120,6 +120,22 @@ aws ssm put-parameter \
   --type String --overwrite
 ```
 
+ShipEngine Elements (Account Settings page) needs a private key for JWT
+signing, plus four partner-onboarding values:
+
+```bash
+aws ssm put-parameter \
+  --name "/shipstation-demo/elements/private-key" \
+  --value "$(cat /path/to/private.pem)" \
+  --type SecureString --overwrite
+```
+
+`SHIPENGINE_PARTNER_ID`, `SHIPENGINE_SCOPE`, `SHIPENGINE_PLATFORM_ISSUER`,
+and `SHIPENGINE_PLATFORM_KEY_ID` are provided by your ShipEngine technical
+contact during partner onboarding. They're stored as GitHub Actions repo
+secrets and passed into `serverless deploy` by `.github/workflows/deploy.yml`;
+for a manual local deploy, export them as shell env vars first.
+
 Sign-in is restricted to an allow-list checked by the `requestOtp` handler.
 Defaults live in `backend/serverless.yml` (`ALLOWED_EMAIL`,
 `ALLOWED_EMAIL_DOMAIN`) and can be overridden per deploy:
@@ -174,3 +190,17 @@ All other endpoints below require that ID token in the `Authorization` header
 
 - `GET /api/warehouses/{accountId}` — List warehouse locations
 - `POST /api/warehouses/{accountId}` — Create new warehouse
+
+### ShipEngine Elements
+
+- `GET /api/elements-token/{accountId}` — Sign a short-lived (1hr) ShipEngine
+  Elements Platform JWT (RS256) for the given seller account. Used by the
+  "Account Settings (Elements)" page's `ElementsProvider.getToken` callback;
+  the private key never reaches the browser.
+
+**CSP note:** this app doesn't currently set a Content-Security-Policy
+header/meta tag, so the Elements payment-method iframe
+(`https://elements-payments.shipstation.com`) renders fine as-is. If a CSP
+is ever added (e.g. via a CloudFront response-headers policy), it must
+include `frame-src https://elements-payments.shipstation.com` or that
+section of Account Settings will render blank with a console CSP error.

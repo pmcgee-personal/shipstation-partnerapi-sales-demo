@@ -7,6 +7,7 @@ const {
   UpdateCommand,
 } = require("@aws-sdk/lib-dynamodb");
 const validation = require("./utils/validation");
+const jwt = require("jsonwebtoken");
 const auth = require("./utils/auth");
 
 const { SSMClient, GetParameterCommand } = require("@aws-sdk/client-ssm");
@@ -20,6 +21,11 @@ const TABLE_NAME = process.env.TABLE_NAME || 'shipstation-partnerapi-demo-accoun
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
 const SSM_PARAM_API_KEY = process.env.SSM_PARAM_API_KEY || '/shipstation-demo/partner-api-key';
 const SSM_PARAM_THEME_ID = process.env.SSM_PARAM_THEME_ID || '/shipstation-demo/theme-id';
+const SSM_PARAM_ELEMENTS_PRIVATE_KEY = process.env.SSM_PARAM_ELEMENTS_PRIVATE_KEY || '/shipstation-demo/elements/private-key';
+const SHIPENGINE_PARTNER_ID = process.env.SHIPENGINE_PARTNER_ID;
+const SHIPENGINE_SCOPE = process.env.SHIPENGINE_SCOPE;
+const SHIPENGINE_PLATFORM_ISSUER = process.env.SHIPENGINE_PLATFORM_ISSUER;
+const SHIPENGINE_PLATFORM_KEY_ID = process.env.SHIPENGINE_PLATFORM_KEY_ID;
 // Logging utility that respects LOG_LEVEL and includes request tracking
 const logger = {
   debug: (msg, data, requestId) => {
@@ -165,6 +171,15 @@ const CORS_HEADERS = {
 async function getPartnerApiKey() {
   const ssmCommand = new GetParameterCommand({
     Name: SSM_PARAM_API_KEY,
+    WithDecryption: true,
+  });
+  const ssmResponse = await ssmClient.send(ssmCommand);
+  return ssmResponse.Parameter.Value;
+}
+
+async function getElementsPrivateKey() {
+  const ssmCommand = new GetParameterCommand({
+    Name: SSM_PARAM_ELEMENTS_PRIVATE_KEY,
     WithDecryption: true,
   });
   const ssmResponse = await ssmClient.send(ssmCommand);
@@ -641,6 +656,65 @@ module.exports.createWarehouse = async (event) => {
       body: JSON.stringify({
         error: "Internal Server Error during warehouse manual creation",
       }),
+    };
+  }
+};
+
+// ShipEngine Elements Platform JWT (RS256). Must run server-side only --
+// the private key never reaches the browser. See:
+// https://docs.shipstation.com/apis/shipengine/docs/elements/getting-started
+module.exports.generateElementsToken = async (event) => {
+  try {
+    // Validate accountId from path -- this is the ShipEngine "tenant"
+    const tokenValidation = validation.validateAccountIdPath(event.pathParameters?.accountId);
+    if (!tokenValidation.isValid) {
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: tokenValidation.error }),
+      };
+    }
+
+    if (!SHIPENGINE_PARTNER_ID || !SHIPENGINE_SCOPE || !SHIPENGINE_PLATFORM_ISSUER || !SHIPENGINE_PLATFORM_KEY_ID) {
+      console.error(
+        "Missing ShipEngine Elements partner-onboarding config: set SHIPENGINE_PARTNER_ID, SHIPENGINE_SCOPE, SHIPENGINE_PLATFORM_ISSUER, SHIPENGINE_PLATFORM_KEY_ID",
+      );
+      return {
+        statusCode: 500,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: "Elements token signing is not configured" }),
+      };
+    }
+
+    const { accountId } = tokenValidation.validated;
+    const privateKey = await getElementsPrivateKey();
+
+    const token = jwt.sign(
+      {
+        partner: SHIPENGINE_PARTNER_ID,
+        tenant: accountId,
+        scope: SHIPENGINE_SCOPE,
+      },
+      privateKey,
+      {
+        algorithm: "RS256",
+        expiresIn: 3600,
+        issuer: SHIPENGINE_PLATFORM_ISSUER,
+        keyid: SHIPENGINE_PLATFORM_KEY_ID,
+      },
+    );
+
+    return {
+      statusCode: 200,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ token }),
+    };
+  } catch (error) {
+    console.error("Error generating Elements token:", error);
+    return {
+      statusCode: 500,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ error: "Internal Server Error during Elements token generation" }),
     };
   }
 };

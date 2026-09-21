@@ -6,12 +6,14 @@ import {
   Truck,
   Settings,
   Settings2,
+  UserCog,
   Users,
 } from "lucide-react";
 
 import { themeConfig } from "./themeConfig";
 import CarrierSettings from "./CarrierSettings";
 import DashboardPage from "./DashboardPage"; // <-- Added our new import
+import AccountSettingsElement from "./AccountSettingsElement";
 
 function Layout({ activeAccountId }) {
   Layout.propTypes = {
@@ -38,6 +40,11 @@ function Layout({ activeAccountId }) {
     { id: "inventory", label: "Inventory", icon: Package, disabled: true },
     { id: "shipping", label: "Shipping", icon: Truck, disabled: true },
     { id: "settings", label: "Carrier Settings", icon: Settings },
+    {
+      id: "account-settings-element",
+      label: "Account Settings (Elements)",
+      icon: UserCog,
+    },
   ];
 
   return (
@@ -112,6 +119,9 @@ function Layout({ activeAccountId }) {
           {activePage === "dashboard" && <DashboardPage />}
           {activePage === "carrier-settings" && (
             <CarrierSettings activeAccountId={activeAccountId} />
+          )}
+          {activePage === "account-settings-element" && (
+            <AccountSettingsElement activeAccountId={activeAccountId} />
           )}
         </main>
       </div>

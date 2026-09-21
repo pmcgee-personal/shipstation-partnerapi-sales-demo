@@ -165,4 +165,19 @@ export const api = {
       handleApiError(error, "listWarehouses");
     }
   },
+  // Fetches a short-lived ShipEngine Elements Platform JWT (RS256), signed
+  // server-side, scoped to the given seller account (the Elements "tenant").
+  // ElementsProvider's getToken callback expects a raw JWT string back.
+  getElementsToken: async (accountId) => {
+    const response = await fetch(`${API_BASE_URL}/api/elements-token/${accountId}`, {
+      headers: authHeaders(),
+    });
+    if (!response.ok) {
+      handleUnauthorized(response);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to fetch Elements token");
+    }
+    const data = await response.json();
+    return data.token;
+  },
 };

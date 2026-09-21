@@ -66,6 +66,10 @@ jobs:
           LOG_LEVEL: ${{ secrets.LOG_LEVEL }}
           SSM_PARAM_API_KEY: ${{ secrets.SSM_PARAM_API_KEY }}
           SSM_PARAM_THEME_ID: ${{ secrets.SSM_PARAM_THEME_ID }}
+          SHIPENGINE_PARTNER_ID: ${{ secrets.SHIPENGINE_PARTNER_ID }}
+          SHIPENGINE_SCOPE: ${{ secrets.SHIPENGINE_SCOPE }}
+          SHIPENGINE_PLATFORM_ISSUER: ${{ secrets.SHIPENGINE_PLATFORM_ISSUER }}
+          SHIPENGINE_PLATFORM_KEY_ID: ${{ secrets.SHIPENGINE_PLATFORM_KEY_ID }}
 
       - name: Deploy frontend to S3
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'

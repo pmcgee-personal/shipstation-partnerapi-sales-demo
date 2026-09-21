@@ -12,6 +12,7 @@ import {
   AccountSettings,
   ConnectExternalCarrier,
   ElementsProvider,
+  ManageExternalCarriers,
 } from "@shipengine/elements";
 import { api } from "../../services/api";
 import { themeConfig } from "./themeConfig";
@@ -100,14 +101,21 @@ function AccountSettingsElement({ activeAccountId }) {
 
       {containersMounted && rightContainerRef.current && (
         <ElementsProvider {...sharedProviderProps} container={rightContainerRef.current}>
-          <ConnectExternalCarrier.Element
-            onCarrierConnected={() =>
-              console.log("[ShipEngine Elements] carrier connected")
-            }
-            onCancel={() =>
-              console.log("[ShipEngine Elements] connect-carrier cancelled")
-            }
-          />
+          <div className="space-y-6">
+            <ConnectExternalCarrier.Element
+              onCarrierConnected={() =>
+                console.log("[ShipEngine Elements] carrier connected")
+              }
+              onCancel={() =>
+                console.log("[ShipEngine Elements] connect-carrier cancelled")
+              }
+            />
+            <ManageExternalCarriers.Element
+              onCarrierConnected={() =>
+                console.log("[ShipEngine Elements] carrier connected (manage)")
+              }
+            />
+          </div>
         </ElementsProvider>
       )}
     </div>

@@ -21,8 +21,17 @@ import { themeConfig } from "./themeConfig";
 // corresponding section if either array is empty/omitted -- see the
 // "Connecting Carrier Accounts" section of the getting-started guide.
 // Matches the USPS/UPS/FedEx story already used in the mock dashboard data.
-const ENABLED_SHIPENGINE_CARRIERS = ["stamps_com", "ups"];
-const ENABLED_EXTERNAL_CARRIERS = ["ups", "fedex"];
+const ENABLED_SHIPENGINE_CARRIERS = ["stamps_com"];
+const ENABLED_EXTERNAL_CARRIERS = [
+  "ups",
+  "fedex",
+  "dhl_express",
+  "wwex_parcel",
+  "veho",
+  "tusk",
+  "ontrac_v2",
+  "cirro_e_commerce",
+];
 
 // Minimal theme so buttons/links pick up the app's accent color instead of
 // the Elements default gray fallback. Every themeConfig field is optional.
@@ -94,13 +103,19 @@ function AccountSettingsElement({ activeAccountId }) {
       </div>
 
       {containersMounted && leftContainerRef.current && (
-        <ElementsProvider {...sharedProviderProps} container={leftContainerRef.current}>
+        <ElementsProvider
+          {...sharedProviderProps}
+          container={leftContainerRef.current}
+        >
           <AccountSettings.Element />
         </ElementsProvider>
       )}
 
       {containersMounted && rightContainerRef.current && (
-        <ElementsProvider {...sharedProviderProps} container={rightContainerRef.current}>
+        <ElementsProvider
+          {...sharedProviderProps}
+          container={rightContainerRef.current}
+        >
           <div className="space-y-6">
             <ConnectExternalCarrier.Element
               onCarrierConnected={() =>

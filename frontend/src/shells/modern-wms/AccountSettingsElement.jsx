@@ -7,12 +7,13 @@
 // https://docs.shipstation.com/apis/shipengine/docs/elements/getting-started
 import { useCallback, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { Info } from "lucide-react";
+import { Info, Rocket, X } from "lucide-react";
 import {
   AccountSettings,
   ConnectExternalCarrier,
   ElementsProvider,
   ManageExternalCarriers,
+  Onboarding,
 } from "@shipengine/elements";
 import { api } from "../../services/api";
 import { themeConfig } from "./themeConfig";
@@ -39,6 +40,36 @@ const ENABLED_EXTERNAL_CARRIERS = [
   "amazon_shipping_us",
 ];
 
+// Onboarding is only relevant for US-origin sellers in this demo (Elements
+// also supports GB/CA/AU, gated by the account's origin_country_code -- not
+// used here). Kept separate from ENABLED_SHIPENGINE_CARRIERS above since
+// that list includes non-US codes for the Account Settings/Connect External
+// Carrier elements.
+const ONBOARDING_SHIPENGINE_CARRIERS = ["stamps_com", "dhl_express_worldwide"];
+
+// Prefills the onboarding wizard's address step so it isn't blank during a
+// demo. Onboarding.Element's defaultShipFromAddress expects a Warehouse
+// shape (name/isDefault/originAddress/returnAddress), NOT a flat shipFrom
+// address -- that flat shape is for shipments/labels, a different API.
+// Matches the existing ShipStation Austin office used elsewhere in this
+// app's mock warehouse data (backend/handler.js WAREHOUSE_LOCATIONS).
+const DEMO_ADDRESS = {
+  name: "Demo Warehouse",
+  companyName: "ShipStation",
+  phone: "555-123-4567",
+  addressLine1: "4301 Bull Creek Rd, Suite 300",
+  cityLocality: "Austin",
+  stateProvince: "TX",
+  postalCode: "78731",
+  countryCode: "US",
+};
+const DEFAULT_SHIP_FROM_ADDRESS = {
+  name: "Demo Warehouse",
+  isDefault: true,
+  originAddress: DEMO_ADDRESS,
+  returnAddress: DEMO_ADDRESS,
+};
+
 // Minimal theme so buttons/links pick up the app's accent color instead of
 // the Elements default gray fallback. Every themeConfig field is optional.
 const elementsThemeConfig = {
@@ -64,7 +95,13 @@ function AccountSettingsElement({ activeAccountId }) {
   // shadow roots at two distinct DOM locations instead.
   const leftContainerRef = useRef(null);
   const rightContainerRef = useRef(null);
+  const onboardingContainerRef = useRef(null);
   const [containersMounted, setContainersMounted] = useState(false);
+  // Onboarding is only relevant before a seller has a ShipEngine carrier
+  // wallet set up; once it's complete, Account Settings is how they manage
+  // it. Collapsed by default, opened either by the button below or by
+  // AccountSettings.Element's own onRedirectToOnboarding callback.
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     setContainersMounted(true);
@@ -102,6 +139,30 @@ function AccountSettingsElement({ activeAccountId }) {
     <div
       className={`${themeConfig.colors.cardBg} p-6 rounded-lg shadow-sm border border-gray-100`}
     >
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-sm text-gray-500">
+          Onboarding sets up a seller&apos;s ShipEngine carrier wallet for
+          the first time. Once complete, manage it via Account Settings
+          below instead.
+        </p>
+        <button
+          onClick={() => setShowOnboarding((prev) => !prev)}
+          className={`inline-flex items-center justify-center px-5 py-2.5 rounded-md font-semibold text-sm transition-colors shrink-0 ml-4 ${themeConfig.colors.primaryButtonBg} ${themeConfig.colors.primaryButtonText} ${themeConfig.colors.primaryButtonHover}`}
+        >
+          {showOnboarding ? (
+            <>
+              <X size={16} className="mr-2" />
+              Close Onboarding Wizard
+            </>
+          ) : (
+            <>
+              <Rocket size={16} className="mr-2" />
+              Run Onboarding Wizard
+            </>
+          )}
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div ref={leftContainerRef} />
         <div ref={rightContainerRef} />
@@ -120,7 +181,9 @@ function AccountSettingsElement({ activeAccountId }) {
             accountSettingsFeatures: { showExternalCarriers: true },
           }}
         >
-          <AccountSettings.Element />
+          <AccountSettings.Element
+            onRedirectToOnboarding={() => setShowOnboarding(true)}
+          />
         </ElementsProvider>
       )}
 
@@ -145,6 +208,38 @@ function AccountSettingsElement({ activeAccountId }) {
               }
             />
           </div>
+        </ElementsProvider>
+      )}
+
+      {/* Always-mounted container so the ref is attached before
+          `showOnboarding` first flips true -- same two-phase pattern as
+          the left/right containers above. */}
+      <div
+        ref={onboardingContainerRef}
+        className={showOnboarding ? "mt-6 pt-6 border-t border-gray-100" : "hidden"}
+      />
+
+      {containersMounted && showOnboarding && onboardingContainerRef.current && (
+        <ElementsProvider
+          {...sharedProviderProps}
+          container={onboardingContainerRef.current}
+          features={{
+            globalFeatures: {
+              enabledShipEngineCarriers: ONBOARDING_SHIPENGINE_CARRIERS,
+              poweredByShipEngine: false,
+            },
+          }}
+        >
+          <Onboarding.Element
+            defaultShipFromAddress={DEFAULT_SHIP_FROM_ADDRESS}
+            onComplete={() => {
+              console.log("[ShipEngine Elements] onboarding complete");
+              setShowOnboarding(false);
+            }}
+            onSellerOnboarded={() =>
+              console.log("[ShipEngine Elements] seller onboarded")
+            }
+          />
         </ElementsProvider>
       )}
     </div>

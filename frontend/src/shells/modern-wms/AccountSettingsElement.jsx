@@ -100,8 +100,42 @@ function AccountSettingsElement({ activeAccountId }) {
   // Onboarding is only relevant before a seller has a ShipEngine carrier
   // wallet set up; once it's complete, Account Settings is how they manage
   // it. Collapsed by default, opened either by the button below or by
-  // AccountSettings.Element's own onRedirectToOnboarding callback.
+  // AccountSettings.Element's own onRedirectToOnboarding callback. While
+  // open, the right column's ElementsProvider is unmounted rather than
+  // left running alongside it -- three simultaneous ElementsProvider
+  // instances for the same tenant (left/right/onboarding) isn't a tested
+  // scenario for this package and broke the right panel's rendering.
   const [showOnboarding, setShowOnboarding] = useState(false);
+  // null = still checking, true/false once known. Computed the same way
+  // @shipengine/elements' own (undocumented) isOnboarded() utility does --
+  // a warehouse plus a carrier that isn't the free-trial stamps_com --
+  // adapted to our backend's snake_case REST fields instead of its
+  // camelCase ones.
+  const [isOnboarded, setIsOnboarded] = useState(null);
+
+  const checkOnboardingStatus = useCallback(async () => {
+    try {
+      const [warehouses, carriers] = await Promise.all([
+        api.listWarehouses(activeAccountId),
+        api.listCarriers(activeAccountId),
+      ]);
+      const hasWarehouse = warehouses.length > 0;
+      const hasRealCarrier = carriers.some(
+        (c) => !(c.carrier_code === "stamps_com" && !c.account_number),
+      );
+      setIsOnboarded(hasWarehouse && hasRealCarrier);
+    } catch (err) {
+      console.error(
+        "[ShipEngine Elements] failed to check onboarding status",
+        err,
+      );
+      setIsOnboarded(null);
+    }
+  }, [activeAccountId]);
+
+  useEffect(() => {
+    checkOnboardingStatus();
+  }, [checkOnboardingStatus]);
 
   useEffect(() => {
     setContainersMounted(true);
@@ -139,29 +173,69 @@ function AccountSettingsElement({ activeAccountId }) {
     <div
       className={`${themeConfig.colors.cardBg} p-6 rounded-lg shadow-sm border border-gray-100`}
     >
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-sm text-gray-500">
-          Onboarding sets up a seller&apos;s ShipEngine carrier wallet for
-          the first time. Once complete, manage it via Account Settings
-          below instead.
-        </p>
-        <button
-          onClick={() => setShowOnboarding((prev) => !prev)}
-          className={`inline-flex items-center justify-center px-5 py-2.5 rounded-md font-semibold text-sm transition-colors shrink-0 ml-4 ${themeConfig.colors.primaryButtonBg} ${themeConfig.colors.primaryButtonText} ${themeConfig.colors.primaryButtonHover}`}
+      {isOnboarded !== true && (
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-sm text-gray-500">
+            Onboarding sets up a seller&apos;s ShipStation API carrier wallet
+            for the first time. Once complete, manage it via Account
+            Settings below instead.
+          </p>
+          <button
+            onClick={() => setShowOnboarding((prev) => !prev)}
+            className={`inline-flex items-center justify-center px-5 py-2.5 rounded-md font-semibold text-sm transition-colors shrink-0 ml-4 ${themeConfig.colors.primaryButtonBg} ${themeConfig.colors.primaryButtonText} ${themeConfig.colors.primaryButtonHover}`}
+          >
+            {showOnboarding ? (
+              <>
+                <X size={16} className="mr-2" />
+                Close Onboarding Wizard
+              </>
+            ) : (
+              <>
+                <Rocket size={16} className="mr-2" />
+                Run Onboarding Wizard
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Always-mounted container so the ref is attached before
+          `showOnboarding` first flips true -- same two-phase pattern as
+          the left/right containers below. Positioned above the grid so
+          opening the wizard never requires scrolling past the other
+          elements to reach it. */}
+      <div
+        ref={onboardingContainerRef}
+        className={
+          showOnboarding ? "mb-6 pb-6 border-b border-gray-100" : "hidden"
+        }
+      />
+
+      {containersMounted && showOnboarding && onboardingContainerRef.current && (
+        <ElementsProvider
+          {...sharedProviderProps}
+          container={onboardingContainerRef.current}
+          features={{
+            globalFeatures: {
+              enabledShipEngineCarriers: ONBOARDING_SHIPENGINE_CARRIERS,
+              poweredByShipEngine: false,
+            },
+          }}
         >
-          {showOnboarding ? (
-            <>
-              <X size={16} className="mr-2" />
-              Close Onboarding Wizard
-            </>
-          ) : (
-            <>
-              <Rocket size={16} className="mr-2" />
-              Run Onboarding Wizard
-            </>
-          )}
-        </button>
-      </div>
+          <Onboarding.Element
+            defaultShipFromAddress={DEFAULT_SHIP_FROM_ADDRESS}
+            onComplete={() => {
+              console.log("[ShipEngine Elements] onboarding complete");
+              setShowOnboarding(false);
+              checkOnboardingStatus();
+            }}
+            onSellerOnboarded={() => {
+              console.log("[ShipEngine Elements] seller onboarded");
+              checkOnboardingStatus();
+            }}
+          />
+        </ElementsProvider>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div ref={leftContainerRef} />
@@ -187,7 +261,11 @@ function AccountSettingsElement({ activeAccountId }) {
         </ElementsProvider>
       )}
 
-      {containersMounted && rightContainerRef.current && (
+      {/* Unmounted while the onboarding wizard is open -- three
+          simultaneous ElementsProvider instances for the same tenant
+          (left/right/onboarding) isn't a tested scenario for this package
+          and broke this panel's rendering. */}
+      {containersMounted && !showOnboarding && rightContainerRef.current && (
         <ElementsProvider
           {...sharedProviderProps}
           container={rightContainerRef.current}
@@ -195,51 +273,21 @@ function AccountSettingsElement({ activeAccountId }) {
         >
           <div className="space-y-6">
             <ConnectExternalCarrier.Element
-              onCarrierConnected={() =>
-                console.log("[ShipEngine Elements] carrier connected")
-              }
+              onCarrierConnected={() => {
+                console.log("[ShipEngine Elements] carrier connected");
+                checkOnboardingStatus();
+              }}
               onCancel={() =>
                 console.log("[ShipEngine Elements] connect-carrier cancelled")
               }
             />
             <ManageExternalCarriers.Element
-              onCarrierConnected={() =>
-                console.log("[ShipEngine Elements] carrier connected (manage)")
-              }
+              onCarrierConnected={() => {
+                console.log("[ShipEngine Elements] carrier connected (manage)");
+                checkOnboardingStatus();
+              }}
             />
           </div>
-        </ElementsProvider>
-      )}
-
-      {/* Always-mounted container so the ref is attached before
-          `showOnboarding` first flips true -- same two-phase pattern as
-          the left/right containers above. */}
-      <div
-        ref={onboardingContainerRef}
-        className={showOnboarding ? "mt-6 pt-6 border-t border-gray-100" : "hidden"}
-      />
-
-      {containersMounted && showOnboarding && onboardingContainerRef.current && (
-        <ElementsProvider
-          {...sharedProviderProps}
-          container={onboardingContainerRef.current}
-          features={{
-            globalFeatures: {
-              enabledShipEngineCarriers: ONBOARDING_SHIPENGINE_CARRIERS,
-              poweredByShipEngine: false,
-            },
-          }}
-        >
-          <Onboarding.Element
-            defaultShipFromAddress={DEFAULT_SHIP_FROM_ADDRESS}
-            onComplete={() => {
-              console.log("[ShipEngine Elements] onboarding complete");
-              setShowOnboarding(false);
-            }}
-            onSellerOnboarded={() =>
-              console.log("[ShipEngine Elements] seller onboarded")
-            }
-          />
         </ElementsProvider>
       )}
     </div>

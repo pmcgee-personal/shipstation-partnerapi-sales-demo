@@ -29,8 +29,10 @@ const ENABLED_EXTERNAL_CARRIERS = [
   "wwex_parcel",
   "veho",
   "tusk",
-  "ontrac_v2",
+  "ontrac",
   "cirro_e_commerce",
+  "clearjet",
+  "unishippers_parcel",
 ];
 
 // Minimal theme so buttons/links pick up the app's accent color instead of

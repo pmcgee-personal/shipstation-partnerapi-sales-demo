@@ -38,10 +38,10 @@ function Layout({ activeAccountId }) {
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "inventory", label: "Inventory", icon: Package, disabled: true },
     { id: "shipping", label: "Shipping", icon: Truck, disabled: true },
-    { id: "settings", label: "Carrier Settings", icon: Settings },
+    { id: "settings", label: "Direct Login", icon: Settings },
     {
       id: "account-settings-element",
-      label: "Account Settings",
+      label: "Elements",
       icon: Settings,
     },
   ];

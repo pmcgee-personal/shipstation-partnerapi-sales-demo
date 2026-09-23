@@ -256,7 +256,13 @@ function AccountSettingsElement({ activeAccountId }) {
           }}
         >
           <AccountSettings.Element
-            onRedirectToOnboarding={() => setShowOnboarding(true)}
+            onRedirectToOnboarding={() => {
+              console.log(
+                "[ShipEngine Elements] onRedirectToOnboarding fired -- AccountSettings.Element determined this seller needs onboarding",
+                { activeAccountId, ourIsOnboardedCheck: isOnboarded },
+              );
+              setShowOnboarding(true);
+            }}
           />
         </ElementsProvider>
       )}

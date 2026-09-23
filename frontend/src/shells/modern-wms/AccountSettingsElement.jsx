@@ -85,18 +85,17 @@ function AccountSettingsElement({ activeAccountId }) {
     );
   }
 
+  const globalFeatures = {
+    enabledShipEngineCarriers: ENABLED_SHIPENGINE_CARRIERS,
+    enabledExternalCarriers: ENABLED_EXTERNAL_CARRIERS,
+    poweredByShipEngine: false,
+  };
+
   const sharedProviderProps = {
     key: activeAccountId,
     getToken,
     themeConfig: elementsThemeConfig,
     onError: (err) => console.error("[ShipEngine Elements]", err),
-    features: {
-      globalFeatures: {
-        enabledShipEngineCarriers: ENABLED_SHIPENGINE_CARRIERS,
-        enabledExternalCarriers: ENABLED_EXTERNAL_CARRIERS,
-        poweredByShipEngine: false,
-      },
-    },
   };
 
   return (
@@ -112,6 +111,14 @@ function AccountSettingsElement({ activeAccountId }) {
         <ElementsProvider
           {...sharedProviderProps}
           container={leftContainerRef.current}
+          features={{
+            globalFeatures,
+            // showExternalCarriers defaults to false, unlike every other
+            // Account Settings section (carriers, payment, warehouses,
+            // units, label layout all default on) -- see the "Account
+            // Settings Features" table in ShipEngine's docs.
+            accountSettingsFeatures: { showExternalCarriers: true },
+          }}
         >
           <AccountSettings.Element />
         </ElementsProvider>
@@ -121,6 +128,7 @@ function AccountSettingsElement({ activeAccountId }) {
         <ElementsProvider
           {...sharedProviderProps}
           container={rightContainerRef.current}
+          features={{ globalFeatures }}
         >
           <div className="space-y-6">
             <ConnectExternalCarrier.Element

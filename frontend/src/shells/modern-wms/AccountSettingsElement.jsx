@@ -190,7 +190,13 @@ function AccountSettingsElement({ activeAccountId }) {
         <div ref={rightContainerRef} />
       </div>
 
-      {containersMounted && leftContainerRef.current && (
+      {/* Also unmounted while the onboarding wizard is open -- this is the
+          panel whose own "Complete Onboarding" button triggers the wizard,
+          so it and Onboarding would otherwise be two simultaneous
+          ElementsProvider instances for the same tenant, which corrupts
+          this panel's rendering (oversized/broken chevron icon, stuck
+          "Loading..."). */}
+      {containersMounted && !showOnboarding && leftContainerRef.current && (
         <ElementsProvider
           {...sharedProviderProps}
           container={leftContainerRef.current}

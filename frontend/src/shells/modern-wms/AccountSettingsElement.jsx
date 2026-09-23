@@ -21,7 +21,7 @@ import { themeConfig } from "./themeConfig";
 // corresponding section if either array is empty/omitted -- see the
 // "Connecting Carrier Accounts" section of the getting-started guide.
 // Matches the USPS/UPS/FedEx story already used in the mock dashboard data.
-const ENABLED_SHIPENGINE_CARRIERS = ["stamps_com"];
+const ENABLED_SHIPENGINE_CARRIERS = ["stamps_com", "globalpost"];
 const ENABLED_EXTERNAL_CARRIERS = [
   "ups",
   "fedex",

@@ -7,7 +7,7 @@
 // https://docs.shipstation.com/apis/shipengine/docs/elements/getting-started
 import { useCallback, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { Info, Rocket, X } from "lucide-react";
+import { Info } from "lucide-react";
 import {
   AccountSettings,
   ConnectExternalCarrier,
@@ -99,12 +99,13 @@ function AccountSettingsElement({ activeAccountId }) {
   const [containersMounted, setContainersMounted] = useState(false);
   // Onboarding is only relevant before a seller has a ShipEngine carrier
   // wallet set up; once it's complete, Account Settings is how they manage
-  // it. Collapsed by default, opened either by the button below or by
-  // AccountSettings.Element's own onRedirectToOnboarding callback. While
-  // open, the right column's ElementsProvider is unmounted rather than
-  // left running alongside it -- three simultaneous ElementsProvider
-  // instances for the same tenant (left/right/onboarding) isn't a tested
-  // scenario for this package and broke the right panel's rendering.
+  // it. Collapsed by default, opened solely by AccountSettings.Element's
+  // own built-in "Complete Onboarding" prompt (onRedirectToOnboarding
+  // callback below) -- no separate trigger button. While open, the right
+  // column's ElementsProvider is unmounted rather than left running
+  // alongside it -- three simultaneous ElementsProvider instances for the
+  // same tenant (left/right/onboarding) isn't a tested scenario for this
+  // package and broke the right panel's rendering.
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
@@ -143,29 +144,10 @@ function AccountSettingsElement({ activeAccountId }) {
     <div
       className={`${themeConfig.colors.cardBg} p-6 rounded-lg shadow-sm border border-gray-100`}
     >
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-sm text-gray-500">
-          Onboarding sets up a seller&apos;s ShipStation API carrier wallet
-          for the first time. Once complete, manage it via Account
-          Settings below instead.
-        </p>
-        <button
-          onClick={() => setShowOnboarding((prev) => !prev)}
-          className={`inline-flex items-center justify-center px-5 py-2.5 rounded-md font-semibold text-sm transition-colors shrink-0 ml-4 ${themeConfig.colors.primaryButtonBg} ${themeConfig.colors.primaryButtonText} ${themeConfig.colors.primaryButtonHover}`}
-        >
-          {showOnboarding ? (
-            <>
-              <X size={16} className="mr-2" />
-              Close Onboarding Wizard
-            </>
-          ) : (
-            <>
-              <Rocket size={16} className="mr-2" />
-              Run Onboarding Wizard
-            </>
-          )}
-        </button>
-      </div>
+      {/* No standalone trigger button -- opened solely via
+          AccountSettings.Element's own built-in "Complete Onboarding"
+          prompt (ShipEngine Carriers section), which already fires
+          onRedirectToOnboarding below. */}
 
       {/* Always-mounted container so the ref is attached before
           `showOnboarding` first flips true -- same two-phase pattern as

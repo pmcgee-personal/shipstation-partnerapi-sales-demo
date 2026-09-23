@@ -36,12 +36,11 @@ const ENABLED_EXTERNAL_CARRIERS = [
   "canada_post",
   "canpar",
   "purolator_ca",
-  "pandion",
-  "lso",
   "gls_us",
   "globalpost_byoa",
   "endicia",
   "amazon_shipping_us",
+  "swyft",
 ];
 
 // Minimal theme so buttons/links pick up the app's accent color instead of

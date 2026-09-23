@@ -80,6 +80,44 @@ const elementsThemeConfig = {
   },
 };
 
+// ElementsProvider's `container` prop is where its shadow root attaches, and
+// that shadow root does not appear to be reliably torn down when the
+// provider unmounts -- reusing the same host <div> across mount/unmount
+// cycles (e.g. toggling the onboarding wizard, or switching accounts) leaves
+// behind stale/unstyled shadow DOM content from the previous instance
+// (confirmed via DevTools: a broken, oversized icon with no Emotion
+// styles). This hook hands each mount a brand-new host element instead of
+// reusing one, and removes it outright on unmount/deactivation so nothing
+// survives to be reused.
+//
+// `active` controls whether a container should exist at all right now;
+// `generation` (e.g. the active account id) forces a fresh container even
+// while `active` stays true, so switching accounts can't reuse a container
+// tied to the previous tenant either.
+function useFreshElementsContainer(active, generation) {
+  const wrapperRef = useRef(null);
+  const [container, setContainer] = useState(null);
+
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper || !active) {
+      setContainer(null);
+      return undefined;
+    }
+
+    const node = document.createElement("div");
+    wrapper.appendChild(node);
+    setContainer(node);
+
+    return () => {
+      node.remove();
+      setContainer(null);
+    };
+  }, [active, generation]);
+
+  return [wrapperRef, container];
+}
+
 function AccountSettingsElement({ activeAccountId }) {
   // getToken must fetch fresh each call so ElementsProvider can refetch
   // once the short-lived (3600s) JWT expires.
@@ -87,30 +125,28 @@ function AccountSettingsElement({ activeAccountId }) {
     return api.getElementsToken(activeAccountId);
   }, [activeAccountId]);
 
-  // ElementsProvider's `container` prop is where its shadow root attaches.
-  // Left unset, *every* Element under one provider shares a single implicit
-  // `elements-container` shadow root -- which is why AccountSettings and
-  // ConnectExternalCarrier previously stacked in one box regardless of any
-  // outer grid CSS. Two providers, each pointed at its own ref, mount their
-  // shadow roots at two distinct DOM locations instead.
-  const leftContainerRef = useRef(null);
-  const rightContainerRef = useRef(null);
-  const onboardingContainerRef = useRef(null);
-  const [containersMounted, setContainersMounted] = useState(false);
   // Onboarding is only relevant before a seller has a ShipEngine carrier
   // wallet set up; once it's complete, Account Settings is how they manage
   // it. Collapsed by default, opened solely by AccountSettings.Element's
   // own built-in "Complete Onboarding" prompt (onRedirectToOnboarding
-  // callback below) -- no separate trigger button. While open, the right
-  // column's ElementsProvider is unmounted rather than left running
-  // alongside it -- three simultaneous ElementsProvider instances for the
-  // same tenant (left/right/onboarding) isn't a tested scenario for this
-  // package and broke the right panel's rendering.
+  // callback below) -- no separate trigger button. While open, the left
+  // and right panels are unmounted rather than left running alongside it --
+  // multiple simultaneous ElementsProvider instances for the same tenant
+  // isn't a tested scenario for this package and corrupted their rendering.
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  useEffect(() => {
-    setContainersMounted(true);
-  }, []);
+  const [leftWrapperRef, leftContainer] = useFreshElementsContainer(
+    !showOnboarding,
+    activeAccountId,
+  );
+  const [rightWrapperRef, rightContainer] = useFreshElementsContainer(
+    !showOnboarding,
+    activeAccountId,
+  );
+  const [onboardingWrapperRef, onboardingContainer] = useFreshElementsContainer(
+    showOnboarding,
+    activeAccountId,
+  );
 
   if (!activeAccountId) {
     return (
@@ -149,22 +185,19 @@ function AccountSettingsElement({ activeAccountId }) {
           prompt (ShipEngine Carriers section), which already fires
           onRedirectToOnboarding below. */}
 
-      {/* Always-mounted container so the ref is attached before
-          `showOnboarding` first flips true -- same two-phase pattern as
-          the left/right containers below. Positioned above the grid so
-          opening the wizard never requires scrolling past the other
-          elements to reach it. */}
+      {/* Positioned above the grid so opening the wizard never requires
+          scrolling past the other elements to reach it. */}
       <div
-        ref={onboardingContainerRef}
+        ref={onboardingWrapperRef}
         className={
           showOnboarding ? "mb-6 pb-6 border-b border-gray-100" : "hidden"
         }
       />
 
-      {containersMounted && showOnboarding && onboardingContainerRef.current && (
+      {onboardingContainer && (
         <ElementsProvider
           {...sharedProviderProps}
-          container={onboardingContainerRef.current}
+          container={onboardingContainer}
           features={{
             globalFeatures: {
               enabledShipEngineCarriers: ONBOARDING_SHIPENGINE_CARRIERS,
@@ -186,20 +219,14 @@ function AccountSettingsElement({ activeAccountId }) {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <div ref={leftContainerRef} />
-        <div ref={rightContainerRef} />
+        <div ref={leftWrapperRef} />
+        <div ref={rightWrapperRef} />
       </div>
 
-      {/* Also unmounted while the onboarding wizard is open -- this is the
-          panel whose own "Complete Onboarding" button triggers the wizard,
-          so it and Onboarding would otherwise be two simultaneous
-          ElementsProvider instances for the same tenant, which corrupts
-          this panel's rendering (oversized/broken chevron icon, stuck
-          "Loading..."). */}
-      {containersMounted && !showOnboarding && leftContainerRef.current && (
+      {leftContainer && (
         <ElementsProvider
           {...sharedProviderProps}
-          container={leftContainerRef.current}
+          container={leftContainer}
           features={{
             globalFeatures,
             // showExternalCarriers defaults to false, unlike every other
@@ -221,14 +248,10 @@ function AccountSettingsElement({ activeAccountId }) {
         </ElementsProvider>
       )}
 
-      {/* Unmounted while the onboarding wizard is open -- three
-          simultaneous ElementsProvider instances for the same tenant
-          (left/right/onboarding) isn't a tested scenario for this package
-          and broke this panel's rendering. */}
-      {containersMounted && !showOnboarding && rightContainerRef.current && (
+      {rightContainer && (
         <ElementsProvider
           {...sharedProviderProps}
-          container={rightContainerRef.current}
+          container={rightContainer}
           features={{ globalFeatures }}
         >
           <div className="space-y-6">

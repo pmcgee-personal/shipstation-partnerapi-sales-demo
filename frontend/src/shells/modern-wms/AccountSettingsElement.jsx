@@ -45,7 +45,7 @@ const ENABLED_EXTERNAL_CARRIERS = [
 // used here). Kept separate from ENABLED_SHIPENGINE_CARRIERS above since
 // that list includes non-US codes for the Account Settings/Connect External
 // Carrier elements.
-const ONBOARDING_SHIPENGINE_CARRIERS = ["stamps_com", "dhl_express_worldwide"];
+const ONBOARDING_SHIPENGINE_CARRIERS = ["stamps_com", "globalpost"];
 
 // Prefills the onboarding wizard's address step so it isn't blank during a
 // demo. Onboarding.Element's defaultShipFromAddress expects a Warehouse

@@ -55,6 +55,7 @@ provider:
 functions:
   createAccount:
     handler: handler.createAccount
+    timeout: 25
     events:
       - http:
           path: api/accounts
@@ -96,6 +97,7 @@ functions:
 
   listCarriers:
     handler: handler.listCarriers
+    timeout: 15
     events:
       - http:
           path: api/carriers/{accountId}

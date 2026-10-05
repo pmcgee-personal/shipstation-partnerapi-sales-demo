@@ -273,6 +273,15 @@ resources:
           gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
 
+    # SNS topic: alarm notifications by email (confirm the subscription email after deploy)
+    AlertTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:service}-${self:provider.stage}-alerts
+        Subscription:
+          - Protocol: email
+            Endpoint: peter.mcgee@auctane.com
+
     # Alarm: Lambda Errors
     LambdaErrorsAlarm:
       Type: AWS::CloudWatch::Alarm
@@ -284,9 +293,11 @@ resources:
         Statistic: Sum
         Period: 60
         EvaluationPeriods: 1
-        Threshold: 5
+        Threshold: 1
         ComparisonOperator: GreaterThanOrEqualToThreshold
         TreatMissingData: notBreaching
+        AlarmActions:
+          - Ref: AlertTopic
 
     # Alarm: Lambda Throttling
     LambdaThrottlesAlarm:
@@ -302,6 +313,8 @@ resources:
         Threshold: 1
         ComparisonOperator: GreaterThanOrEqualToThreshold
         TreatMissingData: notBreaching
+        AlarmActions:
+          - Ref: AlertTopic
 
     # Alarm: Lambda Duration (slow requests)
     LambdaDurationAlarm:
@@ -317,6 +330,8 @@ resources:
         Threshold: 5000
         ComparisonOperator: GreaterThanThreshold
         TreatMissingData: notBreaching
+        AlarmActions:
+          - Ref: AlertTopic
 
     # Alarm: API Gateway 5xx Errors
     APIGateway5xxAlarm:
@@ -326,9 +341,14 @@ resources:
         AlarmDescription: Alert on API Gateway 5xx errors
         MetricName: 5XXError
         Namespace: AWS/ApiGateway
+        Dimensions:
+          - Name: ApiName
+            Value: ${self:provider.stage}-${self:service}
         Statistic: Sum
         Period: 60
         EvaluationPeriods: 1
-        Threshold: 10
+        Threshold: 1
         ComparisonOperator: GreaterThanOrEqualToThreshold
         TreatMissingData: notBreaching
+        AlarmActions:
+          - Ref: AlertTopic

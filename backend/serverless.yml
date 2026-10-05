@@ -280,7 +280,7 @@ resources:
         TopicName: ${self:service}-${self:provider.stage}-alerts
         Subscription:
           - Protocol: email
-            Endpoint: peter.mcgee@auctane.com
+            Endpoint: p.mcgee1986@gmail.com
 
     # Alarm: Lambda Errors
     LambdaErrorsAlarm:

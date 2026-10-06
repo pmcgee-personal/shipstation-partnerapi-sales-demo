@@ -352,3 +352,23 @@ resources:
         TreatMissingData: notBreaching
         AlarmActions:
           - Ref: AlertTopic
+
+    # Alarm: API Gateway 4xx burst (401 auth failures, 403, 400, upstream rejections)
+    APIGateway4xxAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-apigw-4xx
+        AlarmDescription: Burst of 4xx responses on the demo API
+        MetricName: 4XXError
+        Namespace: AWS/ApiGateway
+        Dimensions:
+          - Name: ApiName
+            Value: ${self:provider.stage}-${self:service}
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 5
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
+          - Ref: AlertTopic

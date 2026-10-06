@@ -6,8 +6,6 @@ import { themeConfig } from "./themeConfig";
 import CarrierTableSection from "./CarrierTableSection";
 import WarehouseLocationsSection from "./WarehouseLocationsSection";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 function CarrierSettings({ activeAccountId }) {
   CarrierSettings.propTypes = {
     activeAccountId: PropTypes.string,

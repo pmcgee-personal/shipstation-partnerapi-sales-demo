@@ -63,18 +63,12 @@ function CarrierSettings({ activeAccountId }) {
     }
   }, [activeAccountId, loadCarrierSettings, fetchWarehouses]);
 
-
   const handleAddLocation = async () => {
     if (!activeAccountId) return;
     setIsAddingWarehouse(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/warehouses/${activeAccountId}`,
-        { method: "POST" },
-      );
-      if (!response.ok)
-        throw new Error("Failed to create new warehouse on ShipStation API.");
+      await api.createWarehouse(activeAccountId);
       await fetchWarehouses();
     } catch (err) {
       console.error(err);

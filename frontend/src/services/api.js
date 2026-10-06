@@ -11,7 +11,7 @@ const fetchWithTimeout = (url, options = {}, timeout = API_TIMEOUT) => {
   return Promise.race([
     fetch(url, options),
     new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Request timeout")), timeout)
+      setTimeout(() => reject(new Error("Request timeout")), timeout),
     ),
   ]);
 };
@@ -20,9 +20,17 @@ const retryFetch = async (url, options = {}, retries = MAX_RETRIES) => {
   try {
     return await fetchWithTimeout(url, options);
   } catch (error) {
-    if (retries > 0 && (error.message === "Request timeout" || error.name === "TypeError")) {
-      console.warn(`Retry attempt ${MAX_RETRIES - retries + 1}:`, error.message);
-      await new Promise(resolve => setTimeout(resolve, 1000 * (MAX_RETRIES - retries + 1))); // Exponential backoff
+    if (
+      retries > 0 &&
+      (error.message === "Request timeout" || error.name === "TypeError")
+    ) {
+      console.warn(
+        `Retry attempt ${MAX_RETRIES - retries + 1}:`,
+        error.message,
+      );
+      await new Promise((resolve) =>
+        setTimeout(resolve, 1000 * (MAX_RETRIES - retries + 1)),
+      ); // Exponential backoff
       return retryFetch(url, options, retries - 1);
     }
     throw error;
@@ -30,9 +38,10 @@ const retryFetch = async (url, options = {}, retries = MAX_RETRIES) => {
 };
 
 const handleApiError = (error, endpoint) => {
-  const message = error.message === "Request timeout"
-    ? `Request timeout: ${endpoint} took too long to respond`
-    : error.message || `Failed to connect to ${endpoint}`;
+  const message =
+    error.message === "Request timeout"
+      ? `Request timeout: ${endpoint} took too long to respond`
+      : error.message || `Failed to connect to ${endpoint}`;
   console.error(`[API Error] ${endpoint}:`, error);
   throw new Error(message);
 };
@@ -151,9 +160,12 @@ export const api = {
 
   listWarehouses: async (accountId) => {
     try {
-      const response = await retryFetch(`${API_BASE_URL}/api/warehouses/${accountId}`, {
-        headers: authHeaders(),
-      });
+      const response = await retryFetch(
+        `${API_BASE_URL}/api/warehouses/${accountId}`,
+        {
+          headers: authHeaders(),
+        },
+      );
       if (!response.ok) {
         handleUnauthorized(response);
         const errorData = await response.json().catch(() => ({}));
@@ -165,13 +177,35 @@ export const api = {
       handleApiError(error, "listWarehouses");
     }
   },
+
+  createWarehouse: async (accountId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/warehouses/${accountId}`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+      },
+    );
+    if (!response.ok) {
+      handleUnauthorized(response);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || "Failed to create new warehouse on ShipStation API.",
+      );
+    }
+    return response.json();
+  },
+
   // Fetches a short-lived ShipEngine Elements Platform JWT (RS256), signed
   // server-side, scoped to the given seller account (the Elements "tenant").
   // ElementsProvider's getToken callback expects a raw JWT string back.
   getElementsToken: async (accountId) => {
-    const response = await fetch(`${API_BASE_URL}/api/elements-token/${accountId}`, {
-      headers: authHeaders(),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/elements-token/${accountId}`,
+      {
+        headers: authHeaders(),
+      },
+    );
     if (!response.ok) {
       handleUnauthorized(response);
       const errorData = await response.json().catch(() => ({}));

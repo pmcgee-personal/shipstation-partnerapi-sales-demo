@@ -283,53 +283,42 @@ resources:
           - Protocol: email
             Endpoint: p.mcgee1986@gmail.com
 
-    # Alarm: Lambda Errors
-    LambdaErrorsAlarm:
+    # Alarm: API Gateway latency (this API only)
+    APIGatewayLatencyAlarm:
       Type: AWS::CloudWatch::Alarm
       Properties:
-        AlarmName: ${self:service}-${self:provider.stage}-lambda-errors
-        AlarmDescription: Alert when Lambda functions have errors
-        MetricName: Errors
-        Namespace: AWS/Lambda
-        Statistic: Sum
-        Period: 60
-        EvaluationPeriods: 1
-        Threshold: 1
-        ComparisonOperator: GreaterThanOrEqualToThreshold
-        TreatMissingData: notBreaching
-        AlarmActions:
-          - Ref: AlertTopic
-
-    # Alarm: Lambda Throttling
-    LambdaThrottlesAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: ${self:service}-${self:provider.stage}-lambda-throttles
-        AlarmDescription: Alert when Lambda functions are throttled
-        MetricName: Throttles
-        Namespace: AWS/Lambda
-        Statistic: Sum
-        Period: 60
-        EvaluationPeriods: 1
-        Threshold: 1
-        ComparisonOperator: GreaterThanOrEqualToThreshold
-        TreatMissingData: notBreaching
-        AlarmActions:
-          - Ref: AlertTopic
-
-    # Alarm: Lambda Duration (slow requests)
-    LambdaDurationAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: ${self:service}-${self:provider.stage}-lambda-high-duration
-        AlarmDescription: Alert when Lambda functions take too long
-        MetricName: Duration
-        Namespace: AWS/Lambda
+        AlarmName: ${self:service}-${self:provider.stage}-apigw-latency
+        AlarmDescription: Average API latency above 5s for two 5-minute periods
+        MetricName: Latency
+        Namespace: AWS/ApiGateway
+        Dimensions:
+          - Name: ApiName
+            Value: ${self:provider.stage}-${self:service}
         Statistic: Average
         Period: 300
         EvaluationPeriods: 2
         Threshold: 5000
         ComparisonOperator: GreaterThanThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
+          - Ref: AlertTopic
+
+    # Alarm: sign-in email function errors (invoked by Cognito, not the API)
+    CustomMessageErrorsAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-custommessage-errors
+        AlarmDescription: Errors in the Cognito sign-in email function
+        MetricName: Errors
+        Namespace: AWS/Lambda
+        Dimensions:
+          - Name: FunctionName
+            Value: ${self:service}-${self:provider.stage}-customMessage
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
         TreatMissingData: notBreaching
         AlarmActions:
           - Ref: AlertTopic

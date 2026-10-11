@@ -40,8 +40,7 @@ function validateEmail(email) {
   if (!result.isValid) return result;
 
   // Simple but effective email regex (RFC 5322 simplified)
-  const emailRegex =
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   if (!emailRegex.test(result.trimmed)) {
     return {
@@ -133,7 +132,7 @@ function validateLabel(label) {
  * and this demo doesn't exercise label/rate creation, which is where that
  * would matter.
  */
-const SUPPORTED_ORIGIN_COUNTRIES = ["US", "CA"];
+const SUPPORTED_ORIGIN_COUNTRIES = ["US", "CA", "GB", "AU", "FR"];
 
 /**
  * Validate an origin country code against the supported list.
@@ -195,7 +194,6 @@ function validateCreateAccountInput(bodyData) {
     error: null,
   };
 }
-
 
 /**
  * Validate path parameters for handlers that need accountId

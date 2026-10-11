@@ -58,12 +58,6 @@ function CarrierTable({ carriers, isLoading }) {
               scope="col"
               className={`px-6 py-3 text-left font-semibold ${themeConfig.colors.tableHeaderText}`}
             >
-              Account Number
-            </th>
-            <th
-              scope="col"
-              className={`px-6 py-3 text-left font-semibold ${themeConfig.colors.tableHeaderText}`}
-            >
               Account Nickname
             </th>
             <th
@@ -94,9 +88,6 @@ function CarrierTable({ carriers, isLoading }) {
                   <td className="px-6 py-4 font-semibold text-gray-900">
                     {carrier.friendly_name || carrier.carrier_code}
                   </td>
-                  <td className="px-6 py-4 text-gray-500 font-mono text-xs">
-                    {carrier.account_number || "N/A"}
-                  </td>
                   <td className="px-6 py-4 text-gray-500">
                     {carrier.nickname || "-"}
                   </td>
@@ -110,7 +101,7 @@ function CarrierTable({ carriers, isLoading }) {
                 {/* Compact, Clean Service Row */}
                 {isExpanded && (
                   <tr className="bg-slate-50">
-                    <td colSpan="5" className="px-6 py-4">
+                    <td colSpan="4" className="px-6 py-4">
                       <div className="pl-12 max-w-3xl">
                         <h4 className="font-bold text-slate-700 text-xs mb-3 uppercase tracking-wider">
                           Available Services

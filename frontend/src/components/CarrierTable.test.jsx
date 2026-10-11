@@ -53,7 +53,6 @@ describe("CarrierTable Component", () => {
 
     // 1. Assert the main table row renders the carrier details
     expect(screen.getByText("USPS")).toBeInTheDocument();
-    expect(screen.getByText("USPS-999")).toBeInTheDocument();
     expect(screen.getByText("2 services")).toBeInTheDocument();
 
     // 2. The services should NOT be visible until expanded

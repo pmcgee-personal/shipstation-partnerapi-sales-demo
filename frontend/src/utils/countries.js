@@ -6,4 +6,7 @@
 export const SUPPORTED_COUNTRIES = [
   { code: "US", name: "United States" },
   { code: "CA", name: "Canada" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "AU", name: "Australia" },
+  { code: "FR", name: "France" },
 ];

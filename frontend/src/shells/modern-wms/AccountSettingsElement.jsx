@@ -50,6 +50,11 @@ const ENABLED_SHIPENGINE_CARRIERS = [
   "poste_italiane_walleted",
   "postnl_walleted",
   "seur_walleted",
+  "colis_prive_store_walleted",
+  "delivengo_c2c_walleted",
+  "dhl_express_mydhl_walleted",
+  "mondial_relay_dc_walleted",
+  "hubbed_walleted",
 ];
 const ENABLED_EXTERNAL_CARRIERS = [
   "ups",
@@ -112,6 +117,11 @@ const ONBOARDING_SHIPENGINE_CARRIERS = [
   "poste_italiane_walleted",
   "postnl_walleted",
   "seur_walleted",
+  "colis_prive_store_walleted",
+  "delivengo_c2c_walleted",
+  "dhl_express_mydhl_walleted",
+  "mondial_relay_dc_walleted",
+  "hubbed_walleted",
 ];
 
 // Prefills the onboarding wizard's address step so it isn't blank during a

@@ -321,6 +321,117 @@ resources:
         ComparisonOperator: GreaterThanOrEqualToThreshold
         TreatMissingData: notBreaching
         AlarmActions:
+          - Ref:
+              AlertTopic
+              # ---- Log metric filters: count failures from log lines ----
+    RequestOtpErrorFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName:
+          Ref: RequestOtpLogGroup
+        FilterPattern: '?"REQUEST_OTP_ERROR" ?"REQUEST_OTP_UNEXPECTED_CHALLENGE"'
+        MetricTransformations:
+          - MetricNamespace: PartnerApiDemo
+            MetricName: OtpErrors
+            MetricValue: "1"
+
+    VerifyOtpErrorFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName:
+          Ref: VerifyOtpLogGroup
+        FilterPattern: '?"VERIFY_OTP_ERROR" ?"VERIFY_OTP_UNEXPECTED_CHALLENGE"'
+        MetricTransformations:
+          - MetricNamespace: PartnerApiDemo
+            MetricName: OtpErrors
+            MetricValue: "1"
+
+    CreateAccountUpstreamFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName:
+          Ref: CreateAccountLogGroup
+        FilterPattern: '?"API Error" ?"Auto-Warehouse Creation Failed"'
+        MetricTransformations:
+          - MetricNamespace: PartnerApiDemo
+            MetricName: UpstreamErrors
+            MetricValue: "1"
+
+    DirectLoginUpstreamFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName:
+          Ref: DirectLoginLogGroup
+        FilterPattern: '?"API Error" ?"Auto-Warehouse Creation Failed"'
+        MetricTransformations:
+          - MetricNamespace: PartnerApiDemo
+            MetricName: UpstreamErrors
+            MetricValue: "1"
+
+    ListCarriersUpstreamFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName:
+          Ref: ListCarriersLogGroup
+        FilterPattern: '?"API Error" ?"Auto-Warehouse Creation Failed"'
+        MetricTransformations:
+          - MetricNamespace: PartnerApiDemo
+            MetricName: UpstreamErrors
+            MetricValue: "1"
+
+    ListWarehousesUpstreamFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName:
+          Ref: ListWarehousesLogGroup
+        FilterPattern: '?"API Error" ?"Auto-Warehouse Creation Failed"'
+        MetricTransformations:
+          - MetricNamespace: PartnerApiDemo
+            MetricName: UpstreamErrors
+            MetricValue: "1"
+
+    CreateWarehouseUpstreamFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName:
+          Ref: CreateWarehouseLogGroup
+        FilterPattern: '?"API Error" ?"Auto-Warehouse Creation Failed"'
+        MetricTransformations:
+          - MetricNamespace: PartnerApiDemo
+            MetricName: UpstreamErrors
+            MetricValue: "1"
+
+    # ---- Alarms on those metrics ----
+    OtpErrorsAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-otp-errors
+        AlarmDescription: Sign-in code failures (check Cognito email limit first)
+        MetricName: OtpErrors
+        Namespace: PartnerApiDemo
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
+          - Ref: AlertTopic
+
+    UpstreamErrorsAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-upstream-errors
+        AlarmDescription: 3 or more ShipEngine rejections in 5 minutes
+        MetricName: UpstreamErrors
+        Namespace: PartnerApiDemo
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 3
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
           - Ref: AlertTopic
 
     # Alarm: API Gateway 5xx Errors

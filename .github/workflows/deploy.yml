@@ -79,7 +79,8 @@ jobs:
       - name: Deploy frontend to S3
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
-          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+          aws s3 sync dist/assets s3://${{ secrets.S3_BUCKET_NAME }}/assets --delete --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync dist s3://${{ secrets.S3_BUCKET_NAME }} --exclude "assets/*" --delete --cache-control "no-cache"
         working-directory: frontend
 
       - name: Invalidate CloudFront cache

@@ -132,7 +132,17 @@ function validateLabel(label) {
  * and this demo doesn't exercise label/rate creation, which is where that
  * would matter.
  */
-const SUPPORTED_ORIGIN_COUNTRIES = ["US", "CA", "GB", "AU", "FR"];
+const SUPPORTED_ORIGIN_COUNTRIES = [
+  "US",
+  "CA",
+  "GB",
+  "AU",
+  "FR",
+  "DE",
+  "IT",
+  "ES",
+  "NL",
+];
 
 /**
  * Validate an origin country code against the supported list.

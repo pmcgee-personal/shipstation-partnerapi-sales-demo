@@ -9,4 +9,9 @@ export const SUPPORTED_COUNTRIES = [
   { code: "GB", name: "United Kingdom" },
   { code: "AU", name: "Australia" },
   { code: "FR", name: "France" },
+  { code: "DE", name: "Germany" },
+  { code: "IT", name: "Italy" },
+  { code: "ES", name: "Spain" },
+  { code: "NL", name: "Netherlands" },
+  { code: "DE", name: "Germany" },
 ];

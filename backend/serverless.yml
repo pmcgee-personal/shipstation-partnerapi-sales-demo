@@ -6,6 +6,8 @@ provider:
   region: us-west-2
   stage: dev
   logRetentionInDays: 90
+  apiGateway:
+    metrics: true
   environment:
     TABLE_NAME: ${env:TABLE_NAME, 'shipstation-partnerapi-demo-accounts'}
     LOG_LEVEL: ${env:LOG_LEVEL, 'info'}

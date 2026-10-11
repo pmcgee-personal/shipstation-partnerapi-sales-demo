@@ -62,6 +62,14 @@ const getRequestId = (context) => {
   return context?.requestId || context?.awsRequestId || "no-request-id";
 };
 
+// ShipEngine calls fail fast (10s) instead of hanging until the Lambda times out.
+const SHIPENGINE_TIMEOUT_MS = 10000;
+const shipEngineFetch = (url, options = {}) =>
+  fetch(url, {
+    signal: AbortSignal.timeout(SHIPENGINE_TIMEOUT_MS),
+    ...options,
+  });
+
 // Error handling utilities
 const handleError = (error, context = "") => {
   console.error(`[ERROR] ${context}:`, {
@@ -204,13 +212,23 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS,DELETE",
 };
 
+// Cached for 5 minutes per Lambda container so most requests skip the SSM call.
+const API_KEY_TTL_MS = 5 * 60 * 1000;
+let cachedApiKey = null;
+let cachedApiKeyExpires = 0;
+
 async function getPartnerApiKey() {
+  if (cachedApiKey && Date.now() < cachedApiKeyExpires) {
+    return cachedApiKey;
+  }
   const ssmCommand = new GetParameterCommand({
     Name: SSM_PARAM_API_KEY,
     WithDecryption: true,
   });
   const ssmResponse = await ssmClient.send(ssmCommand);
-  return ssmResponse.Parameter.Value;
+  cachedApiKey = ssmResponse.Parameter.Value;
+  cachedApiKeyExpires = Date.now() + API_KEY_TTL_MS;
+  return cachedApiKey;
 }
 
 async function getElementsPrivateKey() {
@@ -222,7 +240,8 @@ async function getElementsPrivateKey() {
   return ssmResponse.Parameter.Value;
 }
 
-module.exports.createAccount = async (event) => {
+module.exports.createAccount = async (event, context) => {
+  const requestId = getRequestId(context);
   let partnerApiKey;
   try {
     // ---- FOOLPROOF BODY PARSING ----
@@ -259,7 +278,7 @@ module.exports.createAccount = async (event) => {
     const { label, email, countryCode } = createAccountValidation.validated;
     partnerApiKey = await getPartnerApiKey();
 
-    const ssResponse = await fetch(
+    const ssResponse = await shipEngineFetch(
       "https://api.shipengine.com/v1/partners/accounts",
       {
         method: "POST",
@@ -277,7 +296,11 @@ module.exports.createAccount = async (event) => {
 
     if (!ssResponse.ok) {
       const errorText = await ssResponse.text();
-      console.error("ShipStation API Error:", errorText);
+      logger.error(
+        "ShipStation API Error:",
+        { status: ssResponse.status, body: errorText.slice(0, 500) },
+        requestId,
+      );
       return {
         statusCode: ssResponse.status,
         headers: CORS_HEADERS,
@@ -304,6 +327,7 @@ module.exports.createAccount = async (event) => {
     };
     await docClient.send(new PutCommand(params));
 
+    let warehouseCreated = true;
     try {
       const randomLoc =
         WAREHOUSE_LOCATIONS[
@@ -322,7 +346,7 @@ module.exports.createAccount = async (event) => {
           email: "test@test.com",
         },
       };
-      const warehouseResponse = await fetch(
+      const warehouseResponse = await shipEngineFetch(
         "https://api.shipengine.com/v1/warehouses",
         {
           method: "POST",
@@ -335,14 +359,26 @@ module.exports.createAccount = async (event) => {
         },
       );
       if (!warehouseResponse.ok) {
-        console.error(
+        warehouseCreated = false;
+        logger.error(
           "Auto-Warehouse Creation Failed:",
-          await warehouseResponse.text(),
+          {
+            status: warehouseResponse.status,
+            body: (await warehouseResponse.text()).slice(0, 500),
+          },
+          requestId,
         );
       }
     } catch (whError) {
-      console.error("Error during auto-warehouse creation:", whError);
+      warehouseCreated = false;
+      logger.error("Error during auto-warehouse creation:", whError, requestId);
     }
+
+    logger.info(
+      "ACCOUNT_CREATED",
+      { accountId: shipstation_account_id, warehouseCreated },
+      requestId,
+    );
 
     return {
       statusCode: 201,
@@ -350,13 +386,14 @@ module.exports.createAccount = async (event) => {
       body: JSON.stringify({
         message: "Demo account securely created!",
         account_id: shipstation_account_id,
+        warehouse_created: warehouseCreated,
         label,
         email,
         country_code: countryCode,
       }),
     };
   } catch (error) {
-    console.error("Error creating account:", error);
+    logger.error("Error creating account:", error, requestId);
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
@@ -458,7 +495,7 @@ module.exports.directLogin = async (event, context) => {
       .catch(() => null);
     const themeId = themeIdResponse?.Parameter?.Value || "";
 
-    const redirectResponse = await fetch(
+    const redirectResponse = await shipEngineFetch(
       "https://api.shipengine.com/v1/tokens/ephemeral?redirect=shipengine-dashboard",
       {
         method: "POST",
@@ -472,7 +509,11 @@ module.exports.directLogin = async (event, context) => {
 
     if (!redirectResponse.ok) {
       const errorText = await redirectResponse.text();
-      console.error("Direct Login API Error:", errorText);
+      logger.error(
+        "Direct Login API Error:",
+        { status: redirectResponse.status, body: errorText.slice(0, 500) },
+        requestId,
+      );
       return {
         statusCode: redirectResponse.status,
         headers: CORS_HEADERS,
@@ -510,7 +551,8 @@ module.exports.directLogin = async (event, context) => {
   }
 };
 
-module.exports.listCarriers = async (event) => {
+module.exports.listCarriers = async (event, context) => {
+  const requestId = getRequestId(context);
   try {
     // Validate accountId from path
     const carrierValidation = validation.validateAccountIdPath(
@@ -526,7 +568,7 @@ module.exports.listCarriers = async (event) => {
 
     const { accountId } = carrierValidation.validated;
     const partnerApiKey = await getPartnerApiKey();
-    const carriersResponse = await fetch(
+    const carriersResponse = await shipEngineFetch(
       "https://api.shipengine.com/v1/carriers",
       {
         method: "GET",
@@ -540,7 +582,11 @@ module.exports.listCarriers = async (event) => {
 
     if (!carriersResponse.ok) {
       const errorText = await carriersResponse.text();
-      console.error("List Carriers API Error:", errorText);
+      logger.error(
+        "List Carriers API Error:",
+        { status: carriersResponse.status, body: errorText.slice(0, 500) },
+        requestId,
+      );
       return {
         statusCode: carriersResponse.status,
         headers: CORS_HEADERS,
@@ -557,7 +603,7 @@ module.exports.listCarriers = async (event) => {
       body: JSON.stringify(carriersData),
     };
   } catch (error) {
-    console.error("Error listing carriers:", error);
+    logger.error("Error listing carriers:", error, requestId);
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
@@ -568,7 +614,8 @@ module.exports.listCarriers = async (event) => {
   }
 };
 
-module.exports.listWarehouses = async (event) => {
+module.exports.listWarehouses = async (event, context) => {
+  const requestId = getRequestId(context);
   try {
     // Validate accountId from path
     const warehouseValidation = validation.validateAccountIdPath(
@@ -584,17 +631,24 @@ module.exports.listWarehouses = async (event) => {
 
     const { accountId } = warehouseValidation.validated;
     const partnerApiKey = await getPartnerApiKey();
-    const whResponse = await fetch("https://api.shipengine.com/v1/warehouses", {
-      method: "GET",
-      headers: {
-        "API-Key": partnerApiKey,
-        "On-Behalf-Of": accountId.toString(),
-        "Content-Type": "application/json",
+    const whResponse = await shipEngineFetch(
+      "https://api.shipengine.com/v1/warehouses",
+      {
+        method: "GET",
+        headers: {
+          "API-Key": partnerApiKey,
+          "On-Behalf-Of": accountId.toString(),
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
     if (!whResponse.ok) {
       const errorText = await whResponse.text();
-      console.error("List Warehouses API Error:", errorText);
+      logger.error(
+        "List Warehouses API Error:",
+        { status: whResponse.status, body: errorText.slice(0, 500) },
+        requestId,
+      );
       return {
         statusCode: whResponse.status,
         headers: CORS_HEADERS,
@@ -611,7 +665,7 @@ module.exports.listWarehouses = async (event) => {
       body: JSON.stringify(whData),
     };
   } catch (error) {
-    console.error("Error listing warehouses:", error);
+    logger.error("Error listing warehouses:", error, requestId);
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
@@ -622,7 +676,8 @@ module.exports.listWarehouses = async (event) => {
   }
 };
 
-module.exports.createWarehouse = async (event) => {
+module.exports.createWarehouse = async (event, context) => {
+  const requestId = getRequestId(context);
   try {
     // Validate accountId from path
     const createWhValidation = validation.validateAccountIdPath(
@@ -665,18 +720,25 @@ module.exports.createWarehouse = async (event) => {
         email: "test@test.com",
       },
     };
-    const whResponse = await fetch("https://api.shipengine.com/v1/warehouses", {
-      method: "POST",
-      headers: {
-        "API-Key": partnerApiKey,
-        "On-Behalf-Of": accountId.toString(),
-        "Content-Type": "application/json",
+    const whResponse = await shipEngineFetch(
+      "https://api.shipengine.com/v1/warehouses",
+      {
+        method: "POST",
+        headers: {
+          "API-Key": partnerApiKey,
+          "On-Behalf-Of": accountId.toString(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(warehousePayload),
       },
-      body: JSON.stringify(warehousePayload),
-    });
+    );
     if (!whResponse.ok) {
       const errorText = await whResponse.text();
-      console.error("Create Warehouse API Error:", errorText);
+      logger.error(
+        "Create Warehouse API Error:",
+        { status: whResponse.status, body: errorText.slice(0, 500) },
+        requestId,
+      );
       return {
         statusCode: whResponse.status,
         headers: CORS_HEADERS,
@@ -687,13 +749,14 @@ module.exports.createWarehouse = async (event) => {
       };
     }
     const whData = await whResponse.json();
+    logger.info("WAREHOUSE_CREATED", { accountId }, requestId);
     return {
       statusCode: 201,
       headers: CORS_HEADERS,
       body: JSON.stringify(whData),
     };
   } catch (error) {
-    console.error("Error creating warehouse:", error);
+    logger.error("Error creating warehouse:", error, requestId);
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
@@ -707,7 +770,8 @@ module.exports.createWarehouse = async (event) => {
 // ShipEngine Elements Platform JWT (RS256). Must run server-side only --
 // the private key never reaches the browser. See:
 // https://docs.shipstation.com/apis/shipengine/docs/elements/getting-started
-module.exports.generateElementsToken = async (event) => {
+module.exports.generateElementsToken = async (event, context) => {
+  const requestId = getRequestId(context);
   try {
     // Validate accountId from path -- this is the ShipEngine "tenant"
     const tokenValidation = validation.validateAccountIdPath(
@@ -727,8 +791,10 @@ module.exports.generateElementsToken = async (event) => {
       !SHIPENGINE_PLATFORM_ISSUER ||
       !SHIPENGINE_PLATFORM_KEY_ID
     ) {
-      console.error(
+      logger.error(
         "Missing ShipEngine Elements partner-onboarding config: set SHIPENGINE_PARTNER_ID, SHIPENGINE_SCOPE, SHIPENGINE_PLATFORM_ISSUER, SHIPENGINE_PLATFORM_KEY_ID",
+        null,
+        requestId,
       );
       return {
         statusCode: 500,
@@ -763,7 +829,7 @@ module.exports.generateElementsToken = async (event) => {
       body: JSON.stringify({ token }),
     };
   } catch (error) {
-    console.error("Error generating Elements token:", error);
+    logger.error("Error generating Elements token:", error, requestId);
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
@@ -923,6 +989,11 @@ module.exports.verifyOtp = async (event, context) => {
     try {
       result = await auth.verifyEmailOtp(email, code, session);
     } catch (error) {
+      logger.info(
+        "VERIFY_OTP_FAILED",
+        { email, reason: error.name },
+        requestId,
+      );
       if (error.name === "CodeMismatchException") {
         return {
           statusCode: 400,

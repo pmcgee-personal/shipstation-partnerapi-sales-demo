@@ -313,12 +313,12 @@ module.exports.createAccount = async (event) => {
         name: randomLoc.name,
         origin_address: {
           ...randomLoc,
-          phone: "555 123 4567",
+          phone: "5551234567",
           email: "test@test.com",
         },
         return_address: {
           ...randomLoc,
-          phone: "555 123 4567",
+          phone: "5551234567",
           email: "test@test.com",
         },
       };
@@ -651,7 +651,7 @@ module.exports.createWarehouse = async (event) => {
         state_province: randomLoc.state_province,
         postal_code: randomLoc.postal_code,
         country_code: randomLoc.country_code,
-        phone: "555 123 4567",
+        phone: "5551234567",
         email: "test@test.com",
       },
       return_address: {
@@ -661,7 +661,7 @@ module.exports.createWarehouse = async (event) => {
         state_province: randomLoc.state_province,
         postal_code: randomLoc.postal_code,
         country_code: randomLoc.country_code,
-        phone: "555 123 4567",
+        phone: "5551234567",
         email: "test@test.com",
       },
     };

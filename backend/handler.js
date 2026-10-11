@@ -727,9 +727,23 @@ module.exports.customMessage = async (event) => {
   if (event.triggerSource === "CustomMessage_Authentication") {
     const code = event.request.codeParameter;
     event.response.emailSubject = "Your ShipStation Partner API Sales Demo sign-in code";
+    // The code sentence leads the message (not buried after branding) and
+    // the code itself is an unbroken digit run immediately after "is:" --
+    // this matches the phrasing most mail clients' OTP heuristics look for
+    // (iOS Mail / Android Gmail code-suggestion autofill). The bordered,
+    // letter-spaced block below is a visual-only aid: a reliable
+    // triple-click/double-tap target to select just the digits, since no
+    // HTML email client allows a real clipboard-writing button (inline
+    // <script>/onclick handlers are stripped by Gmail, Outlook, Apple Mail,
+    // and Yahoo).
     event.response.emailMessage =
-      `Your ShipStation Partner API Sales Demo verification code is <strong>${code}</strong>. ` +
-      "Enter it on the sign-in page to continue. If you didn't request this, you can safely ignore this email.";
+      `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto;">` +
+      `<p style="font-size: 16px; color: #1f2937; margin: 0 0 4px;">Your ShipStation Partner API Sales Demo verification code is:</p>` +
+      `<div style="margin: 16px 0; padding: 16px 24px; background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; text-align: center;">` +
+      `<span style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #111827;">${code}</span>` +
+      `</div>` +
+      `<p style="font-size: 14px; color: #6b7280; margin: 0;">Enter it on the sign-in page to continue. If you didn't request this, you can safely ignore this email.</p>` +
+      `</div>`;
   }
   return event;
 };

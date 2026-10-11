@@ -76,6 +76,7 @@ const ENABLED_EXTERNAL_CARRIERS = [
   "smartkargo",
   "ship_with_walmart",
   "purolator_international",
+  "endicia",
 ];
 
 // Onboarding is only relevant for US-origin sellers in this demo (Elements

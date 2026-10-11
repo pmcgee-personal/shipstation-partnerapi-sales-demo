@@ -1,83 +1,79 @@
 describe('Create Account Flow', () => {
   beforeEach(() => {
     cy.visitAuthenticated('/');
-  });
 
-  it('should display create account form', () => {
-    // The create account section should be visible on dashboard
-    cy.contains('Create Demo Account').should('be.visible');
-  });
-
-  it('should validate email field', () => {
-    // Try to submit without email
-    cy.contains('Create Demo Account').parent().find('input[type="email"]').clear();
-    cy.contains('button', 'Create').click();
-
-    // Should show validation error or prevent submission
-    // (depends on browser validation)
-  });
-
-  it('should validate label field', () => {
-    // Try to submit without label
-    cy.contains('Create Demo Account').parent().find('input[placeholder*="Label"]').clear();
-    cy.contains('button', 'Create').click();
-
-    // Should show validation error
-  });
-
-  it('should create account with valid data', () => {
-    cy.intercept('POST', '**/api/accounts', {
+    cy.intercept('GET', '**/api/accounts', {
       statusCode: 200,
-      body: {
-        account_id: 'new-account-123',
-        label: 'My New Account',
-        email: 'newaccount@example.com',
-      },
+      body: { accounts: [] },
+    }).as('listAccounts');
+
+    cy.wait('@listAccounts');
+  });
+
+  it('should show a country dropdown when New is clicked', () => {
+    cy.contains('button', 'New').click();
+
+    cy.contains('Select Country').should('be.visible');
+    cy.contains('United States (US)').should('be.visible');
+    cy.contains('Canada (CA)').should('be.visible');
+  });
+
+  it('should close the dropdown without creating an account on outside click', () => {
+    cy.contains('button', 'New').click();
+    cy.contains('United States (US)').should('be.visible');
+
+    cy.get('body').click(0, 0);
+
+    cy.contains('United States (US)').should('not.exist');
+  });
+
+  it('should create an account with the selected country', () => {
+    cy.intercept('POST', '**/api/accounts', (req) => {
+      expect(req.body.countryCode).to.eq('CA');
+      expect(req.body.label).to.be.a('string').and.not.be.empty;
+      expect(req.body.email).to.be.a('string').and.not.be.empty;
+      req.reply({
+        statusCode: 201,
+        body: {
+          account_id: 'new-account-123',
+          label: req.body.label,
+          email: req.body.email,
+          country_code: 'CA',
+        },
+      });
     }).as('createAccount');
 
     cy.intercept('GET', '**/api/accounts', {
       statusCode: 200,
       body: {
         accounts: [
-          {
-            account_id: 'new-account-123',
-            label: 'My New Account',
-            email: 'newaccount@example.com',
-          },
+          { account_id: 'new-account-123', label: 'My New Account', email: 'newaccount@example.com' },
         ],
       },
-    }).as('listAccounts');
+    }).as('listAccountsAfterCreate');
 
-    // Fill in form
-    const form = cy.contains('Create Demo Account').parent();
-    form.find('input[placeholder*="Label"]').type('My New Account');
-    form.find('input[type="email"]').type('newaccount@example.com');
+    cy.contains('button', 'New').click();
+    cy.contains('Canada (CA)').click();
 
-    // Submit
-    form.find('button').contains('Create').click();
-
-    // Wait for creation
     cy.wait('@createAccount');
+    cy.wait('@listAccountsAfterCreate');
 
     // New account should appear in the accounts list
-    cy.wait('@listAccounts');
     cy.contains('My New Account').should('be.visible');
   });
 
   it('should display error on API failure', () => {
     cy.intercept('POST', '**/api/accounts', {
       statusCode: 400,
-      body: { error: 'Invalid email format' },
+      body: { error: 'Unsupported country code' },
     }).as('createAccountError');
 
-    const form = cy.contains('Create Demo Account').parent();
-    form.find('input[placeholder*="Label"]').type('Test Account');
-    form.find('input[type="email"]').type('invalid-email');
-    form.find('button').contains('Create').click();
+    cy.contains('button', 'New').click();
+    cy.contains('United States (US)').click();
 
     cy.wait('@createAccountError');
 
     // Error should be displayed
-    cy.contains('Error').should('be.visible');
+    cy.contains('Creation failed').should('be.visible');
   });
 });

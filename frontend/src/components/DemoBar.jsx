@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import {
   PlaySquare,
@@ -10,6 +10,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { api } from "../services/api";
+import { SUPPORTED_COUNTRIES } from "../utils/countries";
 
 // 1. Import our newly extracted and tested utility function!
 import { generateDemoDetails } from "../utils/demoUtils";
@@ -27,6 +28,8 @@ function DemoBar({ activeAccountId, setActiveAccountId, userEmail, onLogout }) {
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(true);
   const [error, setError] = useState(null);
+  const [isCountryMenuOpen, setIsCountryMenuOpen] = useState(false);
+  const countryMenuRef = useRef(null);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -36,6 +39,21 @@ function DemoBar({ activeAccountId, setActiveAccountId, userEmail, onLogout }) {
     };
     fetchInitialData();
   }, []);
+
+  // Close the country dropdown on outside click.
+  useEffect(() => {
+    if (!isCountryMenuOpen) return undefined;
+    const handleClickOutside = (event) => {
+      if (
+        countryMenuRef.current &&
+        !countryMenuRef.current.contains(event.target)
+      ) {
+        setIsCountryMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isCountryMenuOpen]);
 
   const loadAccounts = async () => {
     try {
@@ -49,12 +67,13 @@ function DemoBar({ activeAccountId, setActiveAccountId, userEmail, onLogout }) {
     }
   };
 
-  const handleNewAccountClick = async () => {
+  const handleCreateAccount = async (countryCode) => {
+    setIsCountryMenuOpen(false);
     setIsCreating(true);
     setError(null);
     try {
       const { label, email } = generateDemoDetails();
-      const newAccount = await api.createAccount(label, email);
+      const newAccount = await api.createAccount(label, email, countryCode);
 
       await loadAccounts();
       setActiveAccountId(newAccount.account_id);
@@ -122,19 +141,38 @@ function DemoBar({ activeAccountId, setActiveAccountId, userEmail, onLogout }) {
           </select>
         </div>
 
-        <button
-          className="flex items-center space-x-1.5 text-slate-300 hover:text-white hover:bg-slate-800 px-2.5 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-wait"
-          title="Create New Demo Account"
-          onClick={handleNewAccountClick}
-          disabled={isCreating || isLoadingAccounts}
-        >
-          {isCreating ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <Plus size={14} />
+        <div className="relative" ref={countryMenuRef}>
+          <button
+            className="flex items-center space-x-1.5 text-slate-300 hover:text-white hover:bg-slate-800 px-2.5 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-wait"
+            title="Create New Demo Account"
+            onClick={() => setIsCountryMenuOpen((prev) => !prev)}
+            disabled={isCreating || isLoadingAccounts}
+          >
+            {isCreating ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Plus size={14} />
+            )}
+            <span>New</span>
+          </button>
+
+          {isCountryMenuOpen && (
+            <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-1 z-10">
+              <div className="px-3 py-1.5 text-xs text-slate-500 uppercase tracking-wide">
+                Select Country
+              </div>
+              {SUPPORTED_COUNTRIES.map((country) => (
+                <button
+                  key={country.code}
+                  className="w-full text-left px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                  onClick={() => handleCreateAccount(country.code)}
+                >
+                  {country.name} ({country.code})
+                </button>
+              ))}
+            </div>
           )}
-          <span>New</span>
-        </button>
+        </div>
 
         <div className="w-px h-4 bg-slate-700"></div>
 

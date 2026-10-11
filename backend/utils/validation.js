@@ -126,6 +126,37 @@ function validateLabel(label) {
 }
 
 /**
+ * Country codes selectable when creating a demo account. Add entries here
+ * to support more origin countries. Note: the auto-created demo warehouse
+ * (WAREHOUSE_LOCATIONS in handler.js) intentionally stays US-only regardless
+ * of this list -- ShipEngine doesn't block a mismatched warehouse address,
+ * and this demo doesn't exercise label/rate creation, which is where that
+ * would matter.
+ */
+const SUPPORTED_ORIGIN_COUNTRIES = ["US", "CA"];
+
+/**
+ * Validate an origin country code against the supported list.
+ * @param {string} countryCode - Country code to validate
+ * @returns {object} { isValid: boolean, trimmed: string, error: string }
+ */
+function validateCountryCode(countryCode) {
+  const result = validateString(countryCode, "Country code");
+  if (!result.isValid) return result;
+
+  const normalized = result.trimmed.toUpperCase();
+  if (!SUPPORTED_ORIGIN_COUNTRIES.includes(normalized)) {
+    return {
+      isValid: false,
+      trimmed: null,
+      error: `Unsupported country code. Must be one of: ${SUPPORTED_ORIGIN_COUNTRIES.join(", ")}`,
+    };
+  }
+
+  return { isValid: true, trimmed: normalized, error: null };
+}
+
+/**
  * Validate all required fields for createAccount
  * @param {object} bodyData - Request body
  * @returns {object} { isValid: boolean, validated: object, error: string }
@@ -149,9 +180,18 @@ function validateCreateAccountInput(bodyData) {
     return { isValid: false, validated: null, error: emailResult.error };
   }
 
+  const countryResult = validateCountryCode(bodyData.countryCode);
+  if (!countryResult.isValid) {
+    return { isValid: false, validated: null, error: countryResult.error };
+  }
+
   return {
     isValid: true,
-    validated: { label: labelResult.trimmed, email: emailResult.trimmed },
+    validated: {
+      label: labelResult.trimmed,
+      email: emailResult.trimmed,
+      countryCode: countryResult.trimmed,
+    },
     error: null,
   };
 }
@@ -207,6 +247,8 @@ module.exports = {
   validateAccountId,
   validateCarrierCode,
   validateLabel,
+  validateCountryCode,
+  SUPPORTED_ORIGIN_COUNTRIES,
   validateCreateAccountInput,
 
   validateAccountIdPath,

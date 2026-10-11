@@ -219,7 +219,7 @@ module.exports.createAccount = async (event) => {
       };
     }
 
-    const { label, email } = createAccountValidation.validated;
+    const { label, email, countryCode } = createAccountValidation.validated;
     partnerApiKey = await getPartnerApiKey();
 
     const ssResponse = await fetch(
@@ -230,7 +230,11 @@ module.exports.createAccount = async (event) => {
           "API-Key": partnerApiKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, company_name: label }),
+        body: JSON.stringify({
+          email,
+          company_name: label,
+          origin_country_code: countryCode,
+        }),
       },
     );
 
@@ -258,8 +262,8 @@ module.exports.createAccount = async (event) => {
         account_id: shipstation_account_id,
         label,
         email,
+        country_code: countryCode,
         created_at: new Date().toISOString(),
-
       },
     };
     await docClient.send(new PutCommand(params));
@@ -312,6 +316,7 @@ module.exports.createAccount = async (event) => {
         account_id: shipstation_account_id,
         label,
         email,
+        country_code: countryCode,
       }),
     };
   } catch (error) {

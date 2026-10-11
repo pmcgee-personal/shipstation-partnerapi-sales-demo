@@ -16,6 +16,7 @@ export default [
         afterEach: 'readonly',
         cy: 'readonly',
         Cypress: 'readonly',
+        expect: 'readonly',
       },
     },
     rules: {

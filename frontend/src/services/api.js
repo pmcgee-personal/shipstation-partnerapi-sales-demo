@@ -88,13 +88,12 @@ export const api = {
     return data;
   },
 
-  // Notice we are accepting (label, email) as two separate parameters!
-  createAccount: async (label, email) => {
+  // Notice we are accepting (label, email, countryCode) as separate parameters!
+  createAccount: async (label, email, countryCode) => {
     const response = await fetch(`${API_BASE_URL}/api/accounts`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
-      // Combine the two arguments into the JSON object the backend expects
-      body: JSON.stringify({ label, email }),
+      body: JSON.stringify({ label, email, countryCode }),
     });
 
     if (!response.ok) {

@@ -17,11 +17,16 @@ const docClient = DynamoDBDocumentClient.from(client);
 const ssmClient = new SSMClient({});
 
 // Environment configuration
-const TABLE_NAME = process.env.TABLE_NAME || 'shipstation-partnerapi-demo-accounts';
-const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
-const SSM_PARAM_API_KEY = process.env.SSM_PARAM_API_KEY || '/shipstation-demo/partner-api-key';
-const SSM_PARAM_THEME_ID = process.env.SSM_PARAM_THEME_ID || '/shipstation-demo/theme-id';
-const SSM_PARAM_ELEMENTS_PRIVATE_KEY = process.env.SSM_PARAM_ELEMENTS_PRIVATE_KEY || '/shipstation-demo/elements/private-key';
+const TABLE_NAME =
+  process.env.TABLE_NAME || "shipstation-partnerapi-demo-accounts";
+const LOG_LEVEL = process.env.LOG_LEVEL || "info";
+const SSM_PARAM_API_KEY =
+  process.env.SSM_PARAM_API_KEY || "/shipstation-demo/partner-api-key";
+const SSM_PARAM_THEME_ID =
+  process.env.SSM_PARAM_THEME_ID || "/shipstation-demo/theme-id";
+const SSM_PARAM_ELEMENTS_PRIVATE_KEY =
+  process.env.SSM_PARAM_ELEMENTS_PRIVATE_KEY ||
+  "/shipstation-demo/elements/private-key";
 const SHIPENGINE_PARTNER_ID = process.env.SHIPENGINE_PARTNER_ID;
 const SHIPENGINE_SCOPE = process.env.SHIPENGINE_SCOPE;
 const SHIPENGINE_PLATFORM_ISSUER = process.env.SHIPENGINE_PLATFORM_ISSUER;
@@ -29,23 +34,32 @@ const SHIPENGINE_PLATFORM_KEY_ID = process.env.SHIPENGINE_PLATFORM_KEY_ID;
 // Logging utility that respects LOG_LEVEL and includes request tracking
 const logger = {
   debug: (msg, data, requestId) => {
-    if (LOG_LEVEL === 'debug') {
-      console.log(`[DEBUG] ${requestId ? `[${requestId}] ` : ''}${msg}`, data || '');
+    if (LOG_LEVEL === "debug") {
+      console.log(
+        `[DEBUG] ${requestId ? `[${requestId}] ` : ""}${msg}`,
+        data || "",
+      );
     }
   },
   info: (msg, data, requestId) => {
-    if (['debug', 'info'].includes(LOG_LEVEL)) {
-      console.log(`[INFO] ${requestId ? `[${requestId}] ` : ''}${msg}`, data || '');
+    if (["debug", "info"].includes(LOG_LEVEL)) {
+      console.log(
+        `[INFO] ${requestId ? `[${requestId}] ` : ""}${msg}`,
+        data || "",
+      );
     }
   },
   error: (msg, data, requestId) => {
-    console.error(`[ERROR] ${requestId ? `[${requestId}] ` : ''}${msg}`, data || '');
+    console.error(
+      `[ERROR] ${requestId ? `[${requestId}] ` : ""}${msg}`,
+      data || "",
+    );
   },
 };
 
 // Helper to get/generate request ID from Lambda context
 const getRequestId = (context) => {
-  return context?.requestId || context?.awsRequestId || 'no-request-id';
+  return context?.requestId || context?.awsRequestId || "no-request-id";
 };
 
 // Error handling utilities
@@ -58,17 +72,29 @@ const handleError = (error, context = "") => {
 
   // Specific error responses
   if (error.code === "ResourceNotFoundException") {
-    return { statusCode: 404, body: JSON.stringify({ error: "Resource not found" }) };
+    return {
+      statusCode: 404,
+      body: JSON.stringify({ error: "Resource not found" }),
+    };
   }
   if (error.code === "ValidationException") {
-    return { statusCode: 400, body: JSON.stringify({ error: "Invalid request" }) };
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Invalid request" }),
+    };
   }
   if (error.code === "ConditionalCheckFailedException") {
-    return { statusCode: 409, body: JSON.stringify({ error: "Conflict: resource already exists" }) };
+    return {
+      statusCode: 409,
+      body: JSON.stringify({ error: "Conflict: resource already exists" }),
+    };
   }
-  
+
   // Generic server error
-  return { statusCode: 500, body: JSON.stringify({ error: "Internal server error" }) };
+  return {
+    statusCode: 500,
+    body: JSON.stringify({ error: "Internal server error" }),
+  };
 };
 
 const successResponse = (data) => ({
@@ -80,6 +106,7 @@ const successResponse = (data) => ({
 const WAREHOUSE_LOCATIONS = [
   {
     name: "Worldwide Express",
+    company_name: "Worldwide Express",
     address_line1: "2021 McKinney Avenue, Suite 1600",
     city_locality: "Dallas",
     state_province: "TX",
@@ -88,6 +115,7 @@ const WAREHOUSE_LOCATIONS = [
   },
   {
     name: "Unishippers",
+    company_name: "Unishippers",
     address_line1: "2323 Victory Avenue",
     city_locality: "Dallas",
     state_province: "TX",
@@ -96,6 +124,7 @@ const WAREHOUSE_LOCATIONS = [
   },
   {
     name: "GlobalTranz",
+    company_name: "GlobalTranz",
     address_line1: "2700 Commerce Street, Suite 1500",
     city_locality: "Dallas",
     state_province: "TX",
@@ -104,6 +133,7 @@ const WAREHOUSE_LOCATIONS = [
   },
   {
     name: "Jear Logistics",
+    company_name: "Jear Logistics",
     address_line1: "Tempe Office",
     city_locality: "Tempe",
     state_province: "AZ",
@@ -112,6 +142,7 @@ const WAREHOUSE_LOCATIONS = [
   },
   {
     name: "BLX Logistics",
+    company_name: "BLX Logistics",
     address_line1: "Culver City Office",
     city_locality: "Culver City",
     state_province: "CA",
@@ -120,6 +151,7 @@ const WAREHOUSE_LOCATIONS = [
   },
   {
     name: "Worldwide Express",
+    company_name: "Worldwide Express",
     address_line1: "Ontario Office",
     city_locality: "Ontario",
     state_province: "CA",
@@ -128,6 +160,7 @@ const WAREHOUSE_LOCATIONS = [
   },
   {
     name: "Unishippers",
+    company_name: "Unishippers",
     address_line1: "San Diego Office",
     city_locality: "San Diego",
     state_province: "CA",
@@ -136,6 +169,7 @@ const WAREHOUSE_LOCATIONS = [
   },
   {
     name: "ShipStation",
+    company_name: "ShipStation",
     address_line1: "4301 Bull Creek Rd, Suite 300",
     city_locality: "Austin",
     state_province: "TX",
@@ -144,6 +178,7 @@ const WAREHOUSE_LOCATIONS = [
   },
   {
     name: "ShipStation",
+    company_name: "ShipStation",
     address_line1: "1990 E. Grand Avenue",
     city_locality: "El Segundo",
     state_province: "CA",
@@ -152,6 +187,7 @@ const WAREHOUSE_LOCATIONS = [
   },
   {
     name: "GlobalTranz",
+    company_name: "GlobalTranz",
     address_line1: "211 E. 7th Street, Suite 620",
     city_locality: "Austin",
     state_province: "TX",
@@ -210,7 +246,8 @@ module.exports.createAccount = async (event) => {
     }
 
     // Validate inputs using utility
-    const createAccountValidation = validation.validateCreateAccountInput(bodyData);
+    const createAccountValidation =
+      validation.validateCreateAccountInput(bodyData);
     if (!createAccountValidation.isValid) {
       return {
         statusCode: 400,
@@ -255,7 +292,6 @@ module.exports.createAccount = async (event) => {
     // Force it to a string so DynamoDB accepts it!
     const shipstation_account_id = account_id.toString();
 
-
     const params = {
       TableName: TABLE_NAME,
       Item: {
@@ -277,12 +313,12 @@ module.exports.createAccount = async (event) => {
         name: randomLoc.name,
         origin_address: {
           ...randomLoc,
-          phone: "555-123-4567",
+          phone: "555 123 4567",
           email: "test@test.com",
         },
         return_address: {
           ...randomLoc,
-          phone: "555-123-4567",
+          phone: "555 123 4567",
           email: "test@test.com",
         },
       };
@@ -345,7 +381,9 @@ module.exports.listAccounts = async (event) => {
 module.exports.getAccount = async (event) => {
   try {
     // Validate accountId from path
-    const accountValidation = validation.validateAccountIdPath(event.pathParameters?.accountId);
+    const accountValidation = validation.validateAccountIdPath(
+      event.pathParameters?.accountId,
+    );
     if (!accountValidation.isValid) {
       return {
         statusCode: 400,
@@ -381,13 +419,9 @@ module.exports.getAccount = async (event) => {
   }
 };
 
-;
-
-;
-
 module.exports.directLogin = async (event, context) => {
   const requestId = getRequestId(context);
-  logger.info('DIRECT_LOGIN_START', { path: event.path }, requestId);
+  logger.info("DIRECT_LOGIN_START", { path: event.path }, requestId);
   try {
     const body = JSON.parse(event.body || "{}");
     // Parse and validate body
@@ -455,8 +489,7 @@ module.exports.directLogin = async (event, context) => {
       finalRedirectUrl += `&theme_id=${themeId}`;
     }
 
-
-    logger.info('DIRECT_LOGIN_SUCCESS', { statusCode: 200 }, requestId);
+    logger.info("DIRECT_LOGIN_SUCCESS", { statusCode: 200 }, requestId);
     return {
       statusCode: 200,
       headers: CORS_HEADERS,
@@ -480,7 +513,9 @@ module.exports.directLogin = async (event, context) => {
 module.exports.listCarriers = async (event) => {
   try {
     // Validate accountId from path
-    const carrierValidation = validation.validateAccountIdPath(event.pathParameters?.accountId);
+    const carrierValidation = validation.validateAccountIdPath(
+      event.pathParameters?.accountId,
+    );
     if (!carrierValidation.isValid) {
       return {
         statusCode: 400,
@@ -536,7 +571,9 @@ module.exports.listCarriers = async (event) => {
 module.exports.listWarehouses = async (event) => {
   try {
     // Validate accountId from path
-    const warehouseValidation = validation.validateAccountIdPath(event.pathParameters?.accountId);
+    const warehouseValidation = validation.validateAccountIdPath(
+      event.pathParameters?.accountId,
+    );
     if (!warehouseValidation.isValid) {
       return {
         statusCode: 400,
@@ -588,7 +625,9 @@ module.exports.listWarehouses = async (event) => {
 module.exports.createWarehouse = async (event) => {
   try {
     // Validate accountId from path
-    const createWhValidation = validation.validateAccountIdPath(event.pathParameters?.accountId);
+    const createWhValidation = validation.validateAccountIdPath(
+      event.pathParameters?.accountId,
+    );
     if (!createWhValidation.isValid) {
       return {
         statusCode: 400,
@@ -612,7 +651,7 @@ module.exports.createWarehouse = async (event) => {
         state_province: randomLoc.state_province,
         postal_code: randomLoc.postal_code,
         country_code: randomLoc.country_code,
-        phone: "555-123-4567",
+        phone: "555 123 4567",
         email: "test@test.com",
       },
       return_address: {
@@ -622,7 +661,7 @@ module.exports.createWarehouse = async (event) => {
         state_province: randomLoc.state_province,
         postal_code: randomLoc.postal_code,
         country_code: randomLoc.country_code,
-        phone: "555-123-4567",
+        phone: "555 123 4567",
         email: "test@test.com",
       },
     };
@@ -671,7 +710,9 @@ module.exports.createWarehouse = async (event) => {
 module.exports.generateElementsToken = async (event) => {
   try {
     // Validate accountId from path -- this is the ShipEngine "tenant"
-    const tokenValidation = validation.validateAccountIdPath(event.pathParameters?.accountId);
+    const tokenValidation = validation.validateAccountIdPath(
+      event.pathParameters?.accountId,
+    );
     if (!tokenValidation.isValid) {
       return {
         statusCode: 400,
@@ -680,14 +721,21 @@ module.exports.generateElementsToken = async (event) => {
       };
     }
 
-    if (!SHIPENGINE_PARTNER_ID || !SHIPENGINE_SCOPE || !SHIPENGINE_PLATFORM_ISSUER || !SHIPENGINE_PLATFORM_KEY_ID) {
+    if (
+      !SHIPENGINE_PARTNER_ID ||
+      !SHIPENGINE_SCOPE ||
+      !SHIPENGINE_PLATFORM_ISSUER ||
+      !SHIPENGINE_PLATFORM_KEY_ID
+    ) {
       console.error(
         "Missing ShipEngine Elements partner-onboarding config: set SHIPENGINE_PARTNER_ID, SHIPENGINE_SCOPE, SHIPENGINE_PLATFORM_ISSUER, SHIPENGINE_PLATFORM_KEY_ID",
       );
       return {
         statusCode: 500,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Elements token signing is not configured" }),
+        body: JSON.stringify({
+          error: "Elements token signing is not configured",
+        }),
       };
     }
 
@@ -719,7 +767,9 @@ module.exports.generateElementsToken = async (event) => {
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
-      body: JSON.stringify({ error: "Internal Server Error during Elements token generation" }),
+      body: JSON.stringify({
+        error: "Internal Server Error during Elements token generation",
+      }),
     };
   }
 };
@@ -731,7 +781,8 @@ module.exports.generateElementsToken = async (event) => {
 module.exports.customMessage = async (event) => {
   if (event.triggerSource === "CustomMessage_Authentication") {
     const code = event.request.codeParameter;
-    event.response.emailSubject = "Your ShipStation Partner API Sales Demo sign-in code";
+    event.response.emailSubject =
+      "Your ShipStation Partner API Sales Demo sign-in code";
     // The code sentence leads the message (not buried after branding) and
     // the code itself is an unbroken digit run immediately after "is:" --
     // this matches the phrasing most mail clients' OTP heuristics look for
@@ -782,7 +833,9 @@ module.exports.requestOtp = async (event, context) => {
       return {
         statusCode: 403,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Access is restricted to ShipStation team emails." }),
+        body: JSON.stringify({
+          error: "Access is restricted to ShipStation team emails.",
+        }),
       };
     }
 
@@ -790,11 +843,17 @@ module.exports.requestOtp = async (event, context) => {
     const { challengeName, session } = await auth.startEmailOtp(email);
 
     if (challengeName !== "EMAIL_OTP") {
-      logger.error("REQUEST_OTP_UNEXPECTED_CHALLENGE", { challengeName }, requestId);
+      logger.error(
+        "REQUEST_OTP_UNEXPECTED_CHALLENGE",
+        { challengeName },
+        requestId,
+      );
       return {
         statusCode: 500,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Unable to start sign-in. Please try again." }),
+        body: JSON.stringify({
+          error: "Unable to start sign-in. Please try again.",
+        }),
       };
     }
 
@@ -809,7 +868,9 @@ module.exports.requestOtp = async (event, context) => {
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
-      body: JSON.stringify({ error: "Internal Server Error while sending code" }),
+      body: JSON.stringify({
+        error: "Internal Server Error while sending code",
+      }),
     };
   }
 };
@@ -838,7 +899,8 @@ module.exports.verifyOtp = async (event, context) => {
     }
     const email = emailValidation.trimmed;
     const code = typeof bodyData.code === "string" ? bodyData.code.trim() : "";
-    const session = typeof bodyData.session === "string" ? bodyData.session : "";
+    const session =
+      typeof bodyData.session === "string" ? bodyData.session : "";
 
     if (!code || !session) {
       return {
@@ -851,7 +913,9 @@ module.exports.verifyOtp = async (event, context) => {
       return {
         statusCode: 403,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Access is restricted to ShipStation team emails." }),
+        body: JSON.stringify({
+          error: "Access is restricted to ShipStation team emails.",
+        }),
       };
     }
 
@@ -870,25 +934,38 @@ module.exports.verifyOtp = async (event, context) => {
         return {
           statusCode: 400,
           headers: CORS_HEADERS,
-          body: JSON.stringify({ error: "That code expired. Request a new one." }),
+          body: JSON.stringify({
+            error: "That code expired. Request a new one.",
+          }),
         };
       }
-      if (error.name === "NotAuthorizedException" || error.name === "TooManyFailedAttemptsException") {
+      if (
+        error.name === "NotAuthorizedException" ||
+        error.name === "TooManyFailedAttemptsException"
+      ) {
         return {
           statusCode: 401,
           headers: CORS_HEADERS,
-          body: JSON.stringify({ error: "Too many attempts. Request a new code." }),
+          body: JSON.stringify({
+            error: "Too many attempts. Request a new code.",
+          }),
         };
       }
       throw error;
     }
 
     if (!result.tokens) {
-      logger.error("VERIFY_OTP_UNEXPECTED_CHALLENGE", { challengeName: result.challengeName }, requestId);
+      logger.error(
+        "VERIFY_OTP_UNEXPECTED_CHALLENGE",
+        { challengeName: result.challengeName },
+        requestId,
+      );
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Unexpected authentication state. Request a new code." }),
+        body: JSON.stringify({
+          error: "Unexpected authentication state. Request a new code.",
+        }),
       };
     }
 
@@ -909,7 +986,9 @@ module.exports.verifyOtp = async (event, context) => {
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
-      body: JSON.stringify({ error: "Internal Server Error while verifying code" }),
+      body: JSON.stringify({
+        error: "Internal Server Error while verifying code",
+      }),
     };
   }
 };

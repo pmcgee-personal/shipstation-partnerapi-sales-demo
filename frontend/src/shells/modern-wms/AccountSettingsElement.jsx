@@ -22,11 +22,22 @@ import { themeConfig } from "./themeConfig";
 // corresponding section if either array is empty/omitted -- see the
 // "Connecting Carrier Accounts" section of the getting-started guide.
 // Matches the USPS/UPS/FedEx story already used in the mock dashboard data.
-const ENABLED_SHIPENGINE_CARRIERS = ["stamps_com", "globalpost"];
+const ENABLED_SHIPENGINE_CARRIERS = [
+  "stamps_com",
+  "globalpost",
+  "canada_post_walleted",
+  "purolator_walleted",
+  "canpar_walleted",
+  "ups_walleted",
+  "fedex_walleted",
+  "dhl_express_walleted",
+];
 const ENABLED_EXTERNAL_CARRIERS = [
   "ups",
   "fedex",
   "dhl_express",
+  "dhl_express_canada",
+  "dhl_global_mail",
   "wwex_parcel",
   "veho",
   "tusk",
@@ -45,7 +56,16 @@ const ENABLED_EXTERNAL_CARRIERS = [
 // used here). Kept separate from ENABLED_SHIPENGINE_CARRIERS above since
 // that list includes non-US codes for the Account Settings/Connect External
 // Carrier elements.
-const ONBOARDING_SHIPENGINE_CARRIERS = ["stamps_com", "globalpost"];
+const ONBOARDING_SHIPENGINE_CARRIERS = [
+  "stamps_com",
+  "globalpost",
+  "canada_post_walleted",
+  "purolator_walleted",
+  "canpar_walleted",
+  "ups_walleted",
+  "fedex_walleted",
+  "dhl_express_walleted",
+];
 
 // Prefills the onboarding wizard's address step so it isn't blank during a
 // demo. Onboarding.Element's defaultShipFromAddress expects a Warehouse
@@ -56,7 +76,7 @@ const ONBOARDING_SHIPENGINE_CARRIERS = ["stamps_com", "globalpost"];
 const DEMO_ADDRESS = {
   name: "Demo Warehouse",
   companyName: "ShipStation",
-  phone: "555-123-4567",
+  phone: "555 123 4567",
   addressLine1: "4301 Bull Creek Rd, Suite 300",
   cityLocality: "Austin",
   stateProvince: "TX",

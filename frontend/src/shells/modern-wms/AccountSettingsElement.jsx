@@ -117,6 +117,7 @@ const ENABLED_EXTERNAL_CARRIERS = [
   "intelcom_ca",
   "loomis_express",
   "nationex",
+  "apg_ecommerce",
 ];
 
 // Onboarding is only relevant for US-origin sellers in this demo (Elements

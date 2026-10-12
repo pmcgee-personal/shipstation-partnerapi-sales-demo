@@ -105,13 +105,18 @@ const ENABLED_EXTERNAL_CARRIERS = [
   "on_trac_v3",
   "parcll",
   "seko",
-  "seko_us",
   "shipx",
   "skynet",
   "skypostal",
   "starlinks",
   "swyft",
   "weship_express",
+  "ecom_logistics_prod",
+  "fleet_optics",
+  "gls_canada",
+  "intelcom_ca",
+  "loomis_express",
+  "nationex",
 ];
 
 // Onboarding is only relevant for US-origin sellers in this demo (Elements

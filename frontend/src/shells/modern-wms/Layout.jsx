@@ -101,16 +101,6 @@ function Layout({ activeAccountId }) {
 
       {/* 2. Main Content Area */}
       <div className="flex-1 flex flex-col overflow-y-auto">
-        {/* Dark Teal Application Header */}
-        <header
-          className={`${themeConfig.colors.headerBg} ${themeConfig.colors.headerText} py-4 px-8 shadow-sm flex items-center justify-between`}
-        >
-          <div>
-            <h1 className="text-lg font-semibold tracking-wide"></h1>
-            <p className="text-xs text-slate-300">Environment: Sandbox</p>
-          </div>
-        </header>
-
         {/* Main Section Content Wrapper */}
         <main className={themeConfig.layout.containerClasses}>
           {/* Conditional rendering for our pages */}

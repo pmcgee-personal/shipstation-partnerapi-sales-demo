@@ -1,8 +1,12 @@
 // frontend/src/shells/modern-wms/AccountSettingsElement.jsx
 //
-// ShipEngine Elements integration: full default Account Settings workflow
-// (carriers, external carriers, payment method, warehouses, units, label
-// layout) for the active demo seller account.
+// ShipEngine Elements integration: Account Settings workflow (carriers,
+// external carriers, payment method, warehouses) for the active demo seller
+// account. Label layout and units of measure sections are hidden via
+// accountSettingsFeatures below.
+//
+// Layout: left column = Account Settings + Manage External Carriers,
+// right column = Connect External Carrier.
 //
 // https://docs.shipstation.com/apis/shipengine/docs/elements/getting-started
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -68,7 +72,7 @@ const ENABLED_EXTERNAL_CARRIERS = [
   "ontrac",
   "cirro_e_commerce",
   "clearjet",
-  "unishippers_parcel",
+  // "unishippers_parcel",
   "canpar",
   "purolator_ca",
   "gls_us",
@@ -76,7 +80,7 @@ const ENABLED_EXTERNAL_CARRIERS = [
   "amazon_shipping",
   // "axelhire",
   // "go_bolt",
-  // "gophr",
+  "gophr",
   // "jitsu",
   // "smartkargo",
   // "ship_with_walmart",
@@ -248,6 +252,12 @@ function AccountSettingsElement({ activeAccountId }) {
   // isn't a tested scenario for this package and corrupted their rendering.
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // ConnectExternalCarrier (right provider) and ManageExternalCarriers (left
+  // provider) now live in separate ElementsProviders, so they no longer
+  // share a data cache. Bumping this key remounts ManageExternalCarriers
+  // after a carrier is connected so its list refreshes.
+  const [manageKey, setManageKey] = useState(0);
+
   const [leftWrapperRef, leftContainer] = useFreshElementsContainer(
     !showOnboarding,
     activeAccountId,
@@ -336,16 +346,20 @@ function AccountSettingsElement({ activeAccountId }) {
         <div ref={rightWrapperRef} />
       </div>
 
+      {/* Left column: Account Settings with Manage External Carriers
+          stacked underneath. */}
       {leftContainer && (
         <ElementsProvider
           {...sharedProviderProps}
           container={leftContainer}
           features={{
             globalFeatures,
-            // showExternalCarriers defaults to false, unlike every other
-            // Account Settings section (carriers, payment, warehouses,
+            // showExternalCarriers defaults to false, unlike the other
+            // Account Settings sections (carriers, payment, warehouses,
             // units, label layout all default on) -- see the "Account
-            // Settings Features" table in ShipEngine's docs.
+            // Settings Features" table in ShipEngine's docs. Label layout
+            // and units of measure are deliberately turned off for this
+            // demo.
             accountSettingsFeatures: {
               showExternalCarriers: true,
               showLabelLayout: false,
@@ -353,39 +367,42 @@ function AccountSettingsElement({ activeAccountId }) {
             },
           }}
         >
-          <AccountSettings.Element
-            onRedirectToOnboarding={() => {
-              console.log(
-                "[ShipEngine Elements] onRedirectToOnboarding fired -- AccountSettings.Element determined this seller needs onboarding",
-                { activeAccountId },
-              );
-              setShowOnboarding(true);
-            }}
-          />
+          <div className="space-y-6">
+            <AccountSettings.Element
+              onRedirectToOnboarding={() => {
+                console.log(
+                  "[ShipEngine Elements] onRedirectToOnboarding fired -- AccountSettings.Element determined this seller needs onboarding",
+                  { activeAccountId },
+                );
+                setShowOnboarding(true);
+              }}
+            />
+            <ManageExternalCarriers.Element
+              key={manageKey}
+              onCarrierConnected={() =>
+                console.log("[ShipEngine Elements] carrier connected (manage)")
+              }
+            />
+          </div>
         </ElementsProvider>
       )}
 
+      {/* Right column: Connect External Carrier. */}
       {rightContainer && (
         <ElementsProvider
           {...sharedProviderProps}
           container={rightContainer}
           features={{ globalFeatures }}
         >
-          <div className="space-y-6">
-            <ConnectExternalCarrier.Element
-              onCarrierConnected={() =>
-                console.log("[ShipEngine Elements] carrier connected")
-              }
-              onCancel={() =>
-                console.log("[ShipEngine Elements] connect-carrier cancelled")
-              }
-            />
-            <ManageExternalCarriers.Element
-              onCarrierConnected={() =>
-                console.log("[ShipEngine Elements] carrier connected (manage)")
-              }
-            />
-          </div>
+          <ConnectExternalCarrier.Element
+            onCarrierConnected={() => {
+              console.log("[ShipEngine Elements] carrier connected");
+              setManageKey((k) => k + 1);
+            }}
+            onCancel={() =>
+              console.log("[ShipEngine Elements] connect-carrier cancelled")
+            }
+          />
         </ElementsProvider>
       )}
     </div>

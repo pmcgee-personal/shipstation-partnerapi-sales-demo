@@ -136,6 +136,8 @@ function DemoBar({ activeAccountId, setActiveAccountId, userEmail, onLogout }) {
             {accounts.map((acc) => (
               <option key={acc.account_id} value={acc.account_id}>
                 {acc.label} ({acc.account_id})
+                {acc.origin_country_code ? ` · ${acc.origin_country_code}` : ""}
+                )
               </option>
             ))}
           </select>

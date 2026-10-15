@@ -346,7 +346,11 @@ function AccountSettingsElement({ activeAccountId }) {
             // Account Settings section (carriers, payment, warehouses,
             // units, label layout all default on) -- see the "Account
             // Settings Features" table in ShipEngine's docs.
-            accountSettingsFeatures: { showExternalCarriers: true },
+            accountSettingsFeatures: {
+              showExternalCarriers: true,
+              showLabelLayout: false,
+              showUnitSettings: false,
+            },
           }}
         >
           <AccountSettings.Element

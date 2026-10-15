@@ -121,7 +121,7 @@ function DemoBar({ activeAccountId, setActiveAccountId, userEmail, onLogout }) {
         <div className="flex items-center space-x-2">
           <span className="text-slate-500">Active Account:</span>
           <select
-            className="bg-slate-800 border border-slate-700 text-white text-sm rounded px-3 py-1 focus:ring-1 focus:ring-emerald-500 outline-none w-48 cursor-pointer disabled:opacity-50"
+            className="bg-slate-800 border border-slate-700 text-white text-sm rounded px-3 py-1 focus:ring-1 focus:ring-emerald-500 outline-none w-64 cursor-pointer disabled:opacity-50"
             value={activeAccountId || ""}
             onChange={(e) => setActiveAccountId(e.target.value)}
             disabled={isCreating || isLoadingAccounts}
@@ -136,8 +136,7 @@ function DemoBar({ activeAccountId, setActiveAccountId, userEmail, onLogout }) {
             {accounts.map((acc) => (
               <option key={acc.account_id} value={acc.account_id}>
                 {acc.label} ({acc.account_id})
-                {acc.origin_country_code ? ` · ${acc.origin_country_code}` : ""}
-                )
+                {acc.country_code ? ` · ${acc.country_code}` : ""})
               </option>
             ))}
           </select>

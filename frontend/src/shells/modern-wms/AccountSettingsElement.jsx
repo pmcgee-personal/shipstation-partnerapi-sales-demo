@@ -59,6 +59,7 @@ const ENABLED_SHIPENGINE_CARRIERS = [
   "dhl_express_mydhl_walleted",
   "mondial_relay_dc_walleted",
   "hubbed_walleted",
+  "hermes",
 ];
 const ENABLED_EXTERNAL_CARRIERS = [
   "ups",
@@ -162,6 +163,7 @@ const ONBOARDING_SHIPENGINE_CARRIERS = [
   "dhl_express_mydhl_walleted",
   "mondial_relay_dc_walleted",
   "hubbed_walleted",
+  "hermes",
 ];
 
 // Prefills the onboarding wizard's address step so it isn't blank during a

@@ -53,6 +53,15 @@ provider:
         - cognito-idp:AdminRespondToAuthChallenge
       Resource:
         - Fn::GetAtt: [AuthUserPool, Arn]
+    # CloudWatch Logs change (Apr 26, 2027): log group actions must use a
+    # log group ARN. Serverless generates CreateLogGroup/TagResource on a
+    # ":*" log stream ARN, so grant them on the log group ARN as well.
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:TagResource
+      Resource:
+        - arn:aws:logs:${aws:region}:${aws:accountId}:log-group:/aws/lambda/${self:service}-${self:provider.stage}-*
 
 # We will define our Lambda endpoints here.
 functions:
@@ -199,6 +208,13 @@ resources:
                     - logs:PutLogEvents
                   Resource:
                     - Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${self:service}-${self:provider.stage}-customMessage:*"
+                # CloudWatch Logs change (Apr 26, 2027): CreateLogGroup needs a
+                # log group ARN (no ":*" stream suffix).
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                  Resource:
+                    - Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${self:service}-${self:provider.stage}-customMessage"
 
     # Cognito User Pool: passwordless email OTP sign-in.
     # AllowedFirstAuthFactors/EMAIL_OTP requires the Essentials feature

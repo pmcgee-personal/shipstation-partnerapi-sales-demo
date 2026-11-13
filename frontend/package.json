@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
-    "@shipengine/elements": "^2.37.1",
+    "@shipengine/elements": "^2.41.2",
     "i18next": "^26.4.2",
     "lucide-react": "^1.17.0",
     "prop-types": "^15.8.1",
